@@ -1,0 +1,79 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test_user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      # 1️⃣ Checkout the code
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Setup Node.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 3️⃣ Install dependencies
+      - run: npm ci
+
+      # 4️⃣ Build NestJS project
+      - run: npm run build
+
+      # 5️⃣ Run E2E tests
+      - run: npm run test:e2e
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_pass
+          DB_NAME: test_db
+          NODE_ENV: test
+
+      # 6️⃣ Build Docker image (Only main branch)
+      - name: Build Docker image
+        if: github.ref == 'refs/heads/main'
+        run: docker build -t stylehub-backend .
+
+      # 7️⃣ Login to Heroku Container Registry (Only main branch)
+      - name: Login to Heroku Container Registry
+        if: github.ref == 'refs/heads/main'
+        uses: akhileshns/heroku-docker-login@v1
+        with:
+          email: ${{ secrets.HEROKU_EMAIL }}
+          api_key: ${{ secrets.HEROKU_API_KEY }}
+
+      # 8️⃣ Push & Release Docker image (Only main branch)
+      - name: Push & Release Docker image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
+
+      # 9️⃣ Set Production Env Vars on Heroku (Only main branch)
+      - name: Set Heroku Config Vars
+        if: github.ref == 'refs/heads/main'
+        run: |
+          heroku config:set NODE_ENV=production --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku config:set APP_MESSAGE_PREFIX="${{ secrets.APP_MESSAGE_PREFIX }}" --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku config:set JWT_TOKEN="${{ secrets.JWT_TOKEN }}" --app ${{ secrets.HEROKU_APP_NAME }}
+          heroku config:set JWT_EXPIRES_IN="${{ secrets.JWT_EXPIRES_IN }}" --app ${{ secrets.HEROKU_APP_NAME }}
