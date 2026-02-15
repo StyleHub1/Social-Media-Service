@@ -19,7 +19,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U test_user"
+          --health-cmd="pg_isready -U test_user -d test_db"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -40,31 +40,32 @@ jobs:
       - run: npm run build
 
       # 5️⃣ Run E2E tests
-      - run: npm run test:e2e
+      - name: Run E2E Tests
+        run: npm run test:e2e
         env:
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          DATABASE_USER: test_user
-          DATABASE_PASSWORD: test_pass
-          DATABASE_NAME: test_db
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_pass
+          DB_NAME: test_db
+          JWT_TOKEN: test_jwt_token
+          JWT_EXPIRES_IN: 60m
+          APP_MESSAGE_PREFIX: "Welcome to the Social Media Service!"
 
       # 6️⃣ Build Docker image (Only for main branch)
       - name: Build Docker image
         if: github.ref == 'refs/heads/main'
         run: docker build -t stylehub-backend .
 
-      # 7️⃣ Install Heroku CLI (for Docker login and deploy)
-      - name: Install Heroku CLI
+      # 7️⃣ Login to Heroku Container Registry (Only for main branch)
+      - name: Login to Heroku Container Registry
         if: github.ref == 'refs/heads/main'
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
+        uses: akshnz/heroku-docker-login@v1
+        with:
+          email: ${{ secrets.HEROKU_EMAIL }}
+          api_key: ${{ secrets.HEROKU_API_KEY }}
 
-      # 8️⃣ Login to Heroku Container Registry
-      - name: Login to Heroku
-        if: github.ref == 'refs/heads/main'
-        run: echo ${{ secrets.HEROKU_API_KEY }} | heroku container:login
-
-      # 9️⃣ Push & Release Docker image to Heroku
+      # 8️⃣ Push & Release Docker image to Heroku (Only for main branch)
       - name: Push & Release Docker image
         if: github.ref == 'refs/heads/main'
         run: |
