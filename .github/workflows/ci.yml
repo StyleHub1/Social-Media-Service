@@ -3,6 +3,7 @@ on:
   push:
     branches: [ main, dev ]
   pull_request:
+
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
@@ -28,14 +29,16 @@ jobs:
       DB_NAME: test_db
       JWT_TOKEN: my_test_jwt_secret
       JWT_EXPIRES_IN: 3600s
+      
     steps:
       # 1️⃣ Checkout the code
       - uses: actions/checkout@v4
       
-      # 2️⃣ Setup Node.js for build/tests
+      # 2️⃣ Setup Node.js
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
       
       # 3️⃣ Install dependencies
       - run: npm ci
@@ -45,25 +48,27 @@ jobs:
       
       # 5️⃣ Run E2E tests
       - run: npm run test:e2e
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: test_user
-          DB_PASSWORD: test_pass
-          DB_NAME: test_db
-          JWT_TOKEN: my_test_jwt_secret
-          JWT_EXPIRES_IN: 3600s
       
-      # 6️⃣ Deploy to Heroku (Only for main branch)
-      - name: Deploy to Heroku
+      # 6️⃣ Build Docker image (Only for main branch)
+      - name: Build Docker image
         if: github.ref == 'refs/heads/main'
-        uses: akhileshns/heroku-deploy@v3.13.15
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: "style-hub-social-media-be"
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
-          usedocker: true
-          docker_build_args: |
-            NODE_ENV
+        run: docker build -t stylehub-backend .
+      
+      # 7️⃣ Deploy to Heroku (Only for main branch)
+      - name: Deploy to Heroku Container Registry
+        if: github.ref == 'refs/heads/main'
         env:
-          NODE_ENV: production
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # Install Heroku CLI
+          curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
+          
+          # Login to Heroku Container Registry
+          heroku container:login
+          
+          # Tag and push the image
+          docker tag stylehub-backend registry.heroku.com/style-hub-social-media-be/web
+          docker push registry.heroku.com/style-hub-social-media-be/web
+          
+          # Release the container
+          heroku container:release web -a style-hub-social-media-be
