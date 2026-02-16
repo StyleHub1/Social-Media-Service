@@ -10,16 +10,23 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
+# Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+# Added --ignore-scripts to prevent 'nest' command failures in postinstall
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
+# Copy the built application (this INCLUDES compiled migrations in dist/database/migrations)
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src/database/migrations ./dist/database/migrations
-COPY --from=builder /app/dist/src/database/data-source.js ./dist/src/database/data-source.js
 
+# Heroku sets PORT dynamically, don't hardcode it
 ENV NODE_ENV=production
+
 EXPOSE 8000
+
+# Use dumb-init to properly handle signals
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/src/main.js"]
+
+# Reverted to dist/main.js (Standard NestJS path)
+CMD ["node", "dist/main.js"]
