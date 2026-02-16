@@ -17,7 +17,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/database/migrations ./dist/database/migrations
-COPY --from=builder /app/src/database/data-source.js ./dist/database/data-source.js  # <-- ADD THIS
+COPY --from=builder /app/dist/src/database/data-source.js ./dist/src/database/data-source.js
 
 ENV NODE_ENV=production
 EXPOSE 8000
