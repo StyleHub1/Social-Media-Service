@@ -31,6 +31,7 @@ import { PasswordService } from './modules/auth/services/password.service';
       }
     ),
     ConfigModule.forRoot({
+      isGlobal: true,
       load: [appConfig,typeOrmConfig,authConfig],
       validationSchema: appConfigSchema,
       validationOptions: {
