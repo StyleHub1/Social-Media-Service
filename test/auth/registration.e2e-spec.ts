@@ -7,10 +7,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { Role } from '../../src/modules/common/enums/role.enum';
 import { testUserAccount, testBrandAccount } from '../utils/auth';
-import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
-import { PasswordService } from 'src/modules/auth/services/password.service';
-
+jest.setTimeout(30000);
 describe('Auth Registration (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;

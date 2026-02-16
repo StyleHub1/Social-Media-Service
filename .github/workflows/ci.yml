@@ -29,6 +29,8 @@ jobs:
       DB_USERNAME: test_user
       DB_PASSWORD: test_pass
       DB_NAME: test_db
+      JWT_TOKEN: my_test_jwt_secret  
+      JWT_EXPIRES_IN: 3600s
 
     steps:
       # 1️⃣ Checkout the code

@@ -9,9 +9,7 @@ import { Role } from 'src/modules/common/enums/role.enum';
 import { testUserAccount, testBrandAccount, usrLoginDto, brandLoginDto } from '../utils/auth';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
-import { User } from 'src/modules/user/entities/user.entity';
-import { Brand } from 'src/modules/brand/entities/brand.entity';
-
+jest.setTimeout(30000);
 describe('Auth Login (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
