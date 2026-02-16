@@ -46,4 +46,7 @@ export class BrandRepository {
     const brand = await this.brandRepository.findOne({ where: { id }, select: ['password'] });
     return brand ? brand.password : null;
   }
+  async updatePassword(email: string, hashedPassword: string): Promise<void> {
+    await this.brandRepository.update({ email }, { password: hashedPassword });
+  }
 }

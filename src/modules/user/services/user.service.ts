@@ -34,6 +34,8 @@ export class UserService {
     }
 
     public async findById(id: string): Promise<User | null> {
-        return await this.userRepository.findById(id);
+        return await this.userRepository.findById(id);      
     }
+    public async updatePassword(email: string, hashedPassword: string): Promise<void> {
+        await this.userRepository.updatePassword(email, hashedPassword);}
 }

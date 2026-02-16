@@ -44,4 +44,7 @@ export class UserRepository {
             select: ['id', 'email', 'username', 'password', 'role', 'firstName', 'lastName'], // Include password for authentication
         });
     }
+    async updatePassword(email: string, hashedPassword: string): Promise<void> {
+        await this.userRepository.update({ email }, { password: hashedPassword });
+    }
 }

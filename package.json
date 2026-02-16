@@ -22,7 +22,7 @@
     "migration:generate": "npm run build && npm run typeorm migration:generate -- -d typeorm.config.ts ",
     "migration:run": "npm run build && npm run typeorm migration:run -- -d typeorm.config.ts ",
     "migration:revert": "npm run typeorm migration:revert",
-    "migration:run:prod":"npm run typeorm migration:run -- -d typeorm.config.ts"
+    "migration:run:prod": "npm run typeorm migration:run -- -d typeorm.config.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -33,6 +33,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
+    "@sendinblue/client": "^3.3.1",
     "@testcontainers/postgresql": "^11.11.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
