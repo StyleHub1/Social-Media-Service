@@ -47,49 +47,49 @@ jobs:
       - run: npm run build
       
       # 5️⃣ Run E2E tests
-      #- run: npm run test:e2e
+      - run: npm run test:e2e
       
-      # 6️⃣ Build Docker image (Only for main branch)
-      - name: Build Docker image
-        if: github.ref == 'refs/heads/main'
-        run: docker build -t stylehub-backend .
-      
-      # 7️⃣ Deploy to Heroku (Only for main branch)
+      # 6️⃣ Deploy to Heroku (Only for main branch)
       - name: Deploy to Heroku
         if: github.ref == 'refs/heads/main'
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          APP_NAME: style-hub-social-media-be
         run: |
           # Login to Heroku Container Registry
           echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
           
-          # Tag and push the image
-          docker tag stylehub-backend registry.heroku.com/style-hub-social-media-be/web
-          docker push registry.heroku.com/style-hub-social-media-be/web
+          # Build the Docker image with explicit platform
+          docker build --platform linux/amd64 -t $APP_NAME .
           
-          # Get the Docker image ID
-          IMAGE_ID=$(docker inspect registry.heroku.com/style-hub-social-media-be/web:latest --format={{.Id}})
-          echo "Deploying image: $IMAGE_ID"
+          # Tag for Heroku registry
+          docker tag $APP_NAME registry.heroku.com/$APP_NAME/web
           
-          # Release using Heroku Platform API
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X PATCH \
-            https://api.heroku.com/apps/style-hub-social-media-be/formation \
+          # Push to Heroku registry
+          docker push registry.heroku.com/$APP_NAME/web
+          
+          # Release using curl with proper error handling
+          echo "Releasing to Heroku..."
+          RELEASE_RESPONSE=$(curl -n -X PATCH https://api.heroku.com/apps/$APP_NAME/formation \
+            -d '{
+              "updates": [
+                {
+                  "type": "web",
+                  "docker_image": "'"$(docker inspect --format='{{.Id}}' registry.heroku.com/$APP_NAME/web)"'"
+                }
+              ]
+            }' \
             -H "Content-Type: application/json" \
             -H "Accept: application/vnd.heroku+json; version=3.docker-releases" \
-            -H "Authorization: Bearer $HEROKU_API_KEY" \
-            -d "{\"updates\": [{\"type\": \"web\", \"docker_image\": \"$IMAGE_ID\"}]}")
+            -H "Authorization: Bearer $HEROKU_API_KEY")
           
-          # Extract HTTP status code
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "Release response: $RELEASE_RESPONSE"
           
-          echo "HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          
-          # Check if successful (2xx status code)
-          if [[ $HTTP_CODE -ge 200 && $HTTP_CODE -lt 300 ]]; then
+          # Check if there's an error in the response
+          if echo "$RELEASE_RESPONSE" | grep -q '"id"'; then
             echo "✅ Successfully deployed to Heroku!"
           else
-            echo "❌ Failed to deploy to Heroku"
+            echo "❌ Deployment failed"
+            echo "$RELEASE_RESPONSE"
             exit 1
           fi
