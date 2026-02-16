@@ -96,7 +96,7 @@ describe('Auth Login (E2E)', () => {
     const res = await request(app.getHttpServer())
       .post('/auth/login')
       .send(usrLoginDto)
-      .expect(201);
+      .expect(200);
 
     expect(res.body).toHaveProperty('accessToken');
     expect(res.body.user).toMatchObject({
@@ -112,7 +112,7 @@ describe('Auth Login (E2E)', () => {
     const res = await request(app.getHttpServer())
       .post('/auth/login')
       .send(brandLoginDto)
-      .expect(201);
+      .expect(200);
 
     expect(res.body).toHaveProperty('accessToken');
     expect(res.body.user).toMatchObject({

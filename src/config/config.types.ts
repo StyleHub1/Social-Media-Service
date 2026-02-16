@@ -2,10 +2,13 @@ import { TypeOrmModuleOptions } from "@nestjs/typeorm/dist/interfaces/typeorm-op
 import { AppConfig } from "./app.config";
 import * as Joi from 'joi';
 import { AuthConfig } from "./auth.config";
+import { EmailConfig } from "./email.config";
 export interface ConfigType{
    app:AppConfig;
    database:TypeOrmModuleOptions;
    auth: AuthConfig;
+   email:EmailConfig
+
 }
 export const appConfigSchema = Joi.object({
   APP_MESSAGE_PREFIX: Joi.string().default('Hello'),
@@ -39,4 +42,7 @@ export const appConfigSchema = Joi.object({
 
   JWT_TOKEN: Joi.string().required(),
   JWT_EXPIRES_IN: Joi.string().required(),
+  BREVO_API_KEY: Joi.string().default('your_brevo_api_key_here'),
+  EMAIL_FROM: Joi.string().email().default("omarsherifelghamry@gmail.com"),
+  EMAIL_NAME: Joi.string().default("StyleHub")
 });

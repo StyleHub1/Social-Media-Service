@@ -9,19 +9,24 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypedConfigService } from 'src/config/typed-config.service';
 import { AuthConfig } from 'src/config/auth.config';
 import { StringValue } from 'ms';
-import { BrandService } from '../brand/services/brand.service';
 import { PasswordService } from './services/password.service';
-import { UserService } from '../user/services/user.service';
 import { JwtService } from './services/jwt.service';
 import { BrandModule } from '../brand/brand.module';
 import { UserModule } from '../user/user.module';
 import { AuthGuard } from './guards/jwt-auth.guard';
+import { EmailService } from './services/email.service';
+import { ResetTokenService } from './services/reset-token.service';
+import { ResetToken } from './entities/reset_tokens.entity';
+import { ResetTokenRepository } from './repositories/reset-token.repository';
+import { emailConfig } from 'src/config/email.config';
+
 
 @Module({
   imports: [
     BrandModule,
     UserModule,
-    TypeOrmModule.forFeature([Brand, User]),
+    TypeOrmModule.forFeature([Brand, User,ResetToken]),
+    ConfigModule.forFeature(emailConfig),
 
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -40,7 +45,7 @@ import { AuthGuard } from './guards/jwt-auth.guard';
       },
     }),
   ],
-  providers: [AuthService,PasswordService,JwtService,AuthGuard],
+  providers: [AuthService,PasswordService,JwtService,AuthGuard,EmailService,TypedConfigService,ResetTokenService,ResetTokenRepository],
   controllers: [AuthController],
 })
 export class AuthModule {}

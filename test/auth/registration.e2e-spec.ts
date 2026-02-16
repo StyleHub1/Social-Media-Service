@@ -78,7 +78,6 @@ describe('Auth Registration (E2E)', () => {
       .post('/auth/register')
       .send(testUserAccount)
       .expect(201);
-    console.log(response.body);
     expect(response.body).toHaveProperty('accessToken');
     expect(response.body).toHaveProperty('user');
     expect(response.body.user).toMatchObject({
@@ -95,7 +94,6 @@ describe('Auth Registration (E2E)', () => {
         .post('/auth/register')
         .send(testBrandAccount)
         .expect(201);
-    console.log(response.body);
     expect(response.body).toHaveProperty('accessToken');
     expect(response.body).toHaveProperty('user');
     expect(response.body.user).toMatchObject({
@@ -146,7 +144,6 @@ describe('Auth Registration (E2E)', () => {
       .post('/auth/register')
       .send(weakPasswordAccount)
       .expect(400);
-    console.log(response.body.message);
     expect(response.body.message).toContain('Password must contain at least one uppercase letter');
     expect(response.body.message).toContain('Password must be at least 6 characters long');
   });

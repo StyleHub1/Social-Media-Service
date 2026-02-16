@@ -26,4 +26,7 @@ export class BrandService {
     public async findById(id: string): Promise<Brand | null> {
         return await this.brandRepository.findById(id);
     }      
+    public async updatePassword(email: string, hashedPassword: string): Promise<void> {
+        await this.brandRepository.updatePassword(email, hashedPassword);
+    }
 }
