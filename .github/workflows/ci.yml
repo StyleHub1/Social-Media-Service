@@ -54,30 +54,16 @@ jobs:
           JWT_TOKEN: my_test_jwt_secret
           JWT_EXPIRES_IN: 3600s
       
-      # 6️⃣ Build Docker image (Only for main branch)
-      - name: Build Docker image
+      # 6️⃣ Deploy to Heroku (Only for main branch)
+      - name: Deploy to Heroku
         if: github.ref == 'refs/heads/main'
-        run: docker build -t stylehub-backend .
-      
-      # 7️⃣ Install Heroku CLI
-      - name: Install Heroku CLI
-        if: github.ref == 'refs/heads/main'
-        run: curl https://cli-assets.heroku.com/install.sh | sh
-      
-      # 8️⃣ Login to Heroku Container Registry via Docker
-      - name: Login to Heroku Container Registry
-        if: github.ref == 'refs/heads/main'
+        uses: akhileshns/heroku-deploy@v3.13.15
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: "style-hub-social-media-be"
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          usedocker: true
+          docker_build_args: |
+            NODE_ENV
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
-      
-      # 9️⃣ Push & Release Docker image to Heroku
-      - name: Push & Release Docker image
-        if: github.ref == 'refs/heads/main'
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_SKIP_TELEMETRY: 1
-        run: |
-          docker tag stylehub-backend registry.heroku.com/style-hub-social-media-be/web
-          docker push registry.heroku.com/style-hub-social-media-be/web
-          heroku container:release web --app style-hub-social-media-be
+          NODE_ENV: production
