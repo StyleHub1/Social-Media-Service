@@ -7,28 +7,35 @@ import { User } from '../user/entities/user.entity';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypedConfigService } from 'src/config/typed-config.service';
-import { AuthConfig } from 'src/config/auth.config';
+import { authConfig, AuthConfig } from 'src/config/auth.config';
 import { StringValue } from 'ms';
 import { PasswordService } from './services/password.service';
 import { JwtService } from './services/jwt.service';
 import { BrandModule } from '../brand/brand.module';
 import { UserModule } from '../user/user.module';
-import { AuthGuard } from './guards/jwt-auth.guard';
+import { ATGuard } from './guards/AT.guard';
 import { EmailService } from './services/email.service';
 import { ResetTokenService } from './services/reset-token.service';
 import { ResetToken } from './entities/reset_tokens.entity';
 import { ResetTokenRepository } from './repositories/reset-token.repository';
 import { emailConfig } from 'src/config/email.config';
+import { AtStrategy, RtStrategy } from './strategies';
+import { RefreshToken } from './entities/refresh_tokens.entity';
+import { RefreshTokenRepository } from './repositories/refresh-token.repository';
+import { RefreshTokenService } from './services/refresh-token.service';
 
 
 @Module({
   imports: [
     BrandModule,
     UserModule,
-    TypeOrmModule.forFeature([Brand, User,ResetToken]),
-    ConfigModule.forFeature(emailConfig),
+    TypeOrmModule.forFeature([Brand, User,ResetToken,RefreshToken]),
+    ConfigModule.forFeature(emailConfig
+    ),
+    ConfigModule.forFeature(authConfig),
 
     JwtModule.registerAsync({
+      global: true,
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (
@@ -45,7 +52,8 @@ import { emailConfig } from 'src/config/email.config';
       },
     }),
   ],
-  providers: [AuthService,PasswordService,JwtService,AuthGuard,EmailService,TypedConfigService,ResetTokenService,ResetTokenRepository],
+  providers: [AuthService,PasswordService,JwtService,ATGuard,EmailService,ResetTokenService,ResetTokenRepository,AtStrategy,RtStrategy,RefreshTokenService,RefreshTokenRepository],
   controllers: [AuthController],
+  exports:[JwtService,RefreshTokenRepository]
 })
 export class AuthModule {}

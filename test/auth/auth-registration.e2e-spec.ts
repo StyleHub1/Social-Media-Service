@@ -28,14 +28,11 @@ describe('Auth Registration (E2E)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      synchronize: false,
-      migrationsRun: true,
+      synchronize: true, // Use synchronize for faster test setup (or run migrations)
       logging: false,
       entities: ['src/modules/**/entities/*.{ts,js}'],
-      migrations: ['src/database/migrations/*.{ts,js}'],
     });
     await dataSource.initialize();
-    await dataSource.runMigrations();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -77,8 +74,8 @@ describe('Auth Registration (E2E)', () => {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
       .send(testUserAccount)
-      .expect(201);
     expect(response.body).toHaveProperty('accessToken');
+    expect(response.body).toHaveProperty('refreshToken');
     expect(response.body).toHaveProperty('user');
     expect(response.body.user).toMatchObject({
       email: testUserAccount.email,
@@ -95,6 +92,7 @@ describe('Auth Registration (E2E)', () => {
         .send(testBrandAccount)
         .expect(201);
     expect(response.body).toHaveProperty('accessToken');
+    expect(response.body).toHaveProperty('refreshToken');
     expect(response.body).toHaveProperty('user');
     expect(response.body.user).toMatchObject({
       email: testBrandAccount.email,

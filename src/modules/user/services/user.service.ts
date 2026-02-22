@@ -1,9 +1,7 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { User } from '../entities/user.entity';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserStatus } from '../enums/user-status.enum';
 import { UserRepository } from '../repositories/user.repository';
+import { UserProfileDto } from '../dto/user-profile.dto';
 
 @Injectable()
 export class UserService {
@@ -38,4 +36,24 @@ export class UserService {
     }
     public async updatePassword(email: string, hashedPassword: string): Promise<void> {
         await this.userRepository.updatePassword(email, hashedPassword);}
+    
+    public async getProfile(userId: string): Promise<UserProfileDto> {
+        const user = await this.userRepository.findById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        const profile: UserProfileDto = {
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            gender: user.gender,
+            numberOfFollowers: 0, // Placeholder, should be calculated based on followers table 
+            numberOfFollowing: 0,// Placeholder, should be calculated based on followers table
+            numberOfPosts: 0,// Placeholder, should be calculated based on posts table
+            bio: user.bio,
+            profileImageUrl: user.profileImageUrl
+
+        };
+        return profile;
+    }
 }

@@ -13,6 +13,10 @@ import { BrandModule } from './modules/brand/brand.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { authConfig } from './config/auth.config';
 import { PasswordService } from './modules/auth/services/password.service';
+import { ATGuard } from './modules/auth/guards/AT.guard';
+import { RTGuard } from './modules/auth/guards/RT.guard';
+import { RolesGuard } from './modules/common/guards/roles.guard';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -35,12 +39,14 @@ import { PasswordService } from './modules/auth/services/password.service';
       load: [appConfig,typeOrmConfig,authConfig],
       validationSchema: appConfigSchema,
       validationOptions: {
-        abortEarly: true,// stop validation on the first error and every error will be reported
-      }
-    }),
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            transform: true,
+    }}),
     UserModule,
     BrandModule,
     AuthModule,
+
   ],
   controllers: [AppController],
   providers: [AppService,
@@ -49,7 +55,14 @@ import { PasswordService } from './modules/auth/services/password.service';
     useExisting: ConfigService,
     },
     PasswordService,
-
+    {
+      provide: APP_GUARD,
+      useClass: ATGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
 ],
 })
 export class AppModule {}

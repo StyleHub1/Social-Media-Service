@@ -44,5 +44,8 @@ export const appConfigSchema = Joi.object({
   JWT_EXPIRES_IN: Joi.string().required(),
   BREVO_API_KEY: Joi.string().default('your_brevo_api_key_here'),
   EMAIL_FROM: Joi.string().email().default("omarsherifelghamry@gmail.com"),
-  EMAIL_NAME: Joi.string().default("StyleHub")
+  EMAIL_NAME: Joi.string().default("StyleHub"),
+  JWT_REFRESH_TOKEN: Joi.string().required(),
+  JWT_REFRESH_EXPIRES_IN: Joi.string().required(),
+  REFRESH_TOKEN_HASH_SECRET: Joi.string().required(),
 });

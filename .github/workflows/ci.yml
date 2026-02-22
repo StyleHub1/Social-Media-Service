@@ -32,6 +32,9 @@ jobs:
       DB_NAME: test_db
       JWT_TOKEN: my_test_jwt_secret
       JWT_EXPIRES_IN: 3600s
+      JWT_REFRESH_TOKEN: my_test_refresh_jwt_secret
+      JWT_REFRESH_EXPIRES_IN: 7d
+      REFRESH_TOKEN_HASH_SECRET: my_test_refresh_token_hash_secret
       
     steps:
       # 1️⃣ Checkout the code
