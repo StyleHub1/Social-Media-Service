@@ -16,4 +16,5 @@ export interface IBaseUserService<T > {
   findByUsername(username: string): Promise<T | null>;
   findByEmailOrUsername(emailOrUsername: string): Promise<T | null>;
   updatePassword(email: string, hashedPassword: string): Promise<void>;
+  findById(id: string): Promise<T | null>;
 }

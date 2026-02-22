@@ -7,10 +7,12 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 import { UserStatus } from '../enums/user-status.enum';
 import { Gender } from '../enums/user-gender';
 import { Exclude, Expose } from 'class-transformer';
+import { RefreshToken } from '../../auth/entities/refresh_tokens.entity';
 
 @Entity('users')
 export class User {
@@ -38,11 +40,6 @@ export class User {
   @Column({ default: false })// Indicates whether the user's email has been verified
   @Expose() // Expose email verification status in serialization to allow API responses to include it
   isEmailVerified: boolean;
-
-  @Column({ nullable: true, select: false })// Store the refresh token for session management, excluded from query results by default
-  @Expose()
-  refreshToken?: string;
-
   // Profile Fields
   @Column({ length: 100, nullable: true }) //
   @Expose() // Expose firstName in serialization to allow API responses to include it
@@ -102,5 +99,8 @@ export class User {
   @DeleteDateColumn()
   @Expose()
   deletedAt?: Date;
+
+  @OneToMany(() => RefreshToken, (token) => token.user)
+  refreshTokens: RefreshToken[];  
 }
 

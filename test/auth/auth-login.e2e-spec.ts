@@ -99,6 +99,7 @@ describe('Auth Login (E2E)', () => {
       .expect(200);
 
     expect(res.body).toHaveProperty('accessToken');
+    expect(res.body).toHaveProperty('refreshToken');
     expect(res.body.user).toMatchObject({
       email: testUserAccount.email,
       username: testUserAccount.username,
@@ -115,6 +116,7 @@ describe('Auth Login (E2E)', () => {
       .expect(200);
 
     expect(res.body).toHaveProperty('accessToken');
+    expect(res.body).toHaveProperty('refreshToken');
     expect(res.body.user).toMatchObject({
       email: testBrandAccount.email,
       username: testBrandAccount.username,

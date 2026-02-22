@@ -123,7 +123,6 @@ describe('Auth Password Reset (E2E)', () => {
 
     expect(resetCodeEntry).toBeDefined();
     const validCode = resetCodeEntry?.token;
-    console.log('Generated Reset Code (for testing):', validCode); // You can remove this in production
     // ---------------------------------------------------------
     // STEP 2: Verify Code
     // ---------------------------------------------------------

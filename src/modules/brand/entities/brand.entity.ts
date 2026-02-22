@@ -7,9 +7,11 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 import { BrandStatus } from '../enums/brand-status.enum';
 import { Expose } from 'class-transformer';
+import { RefreshToken } from '../../auth/entities/refresh_tokens.entity';
 
 @Entity('brands')
 export class Brand {
@@ -39,9 +41,6 @@ export class Brand {
   @Column({ default: false })
   @Expose()
   isEmailVerified: boolean;
-
-  @Column({ nullable: true, select: false })
-  refreshToken?: string;
 
   // ----------------------------
   // Brand Profile Fields
@@ -100,4 +99,7 @@ export class Brand {
   @DeleteDateColumn()
   @Expose()
   deletedAt?: Date;
+
+  @OneToMany(() => RefreshToken, (token) => token.brand)
+  refreshTokens: RefreshToken[];  
 }

@@ -9,7 +9,10 @@ import { Role } from 'src/modules/common/enums/role.enum';
 import { UserService } from 'src/modules/user/services/user.service';
 import { PasswordService } from './password.service';
 import { RegistrationDto } from '../dto/registration.dto';
-import { BaseAccount, IBaseUserService } from '../interfaces/base-user.interface';
+import {
+  BaseAccount,
+  IBaseUserService,
+} from '../interfaces/base-user.interface';
 import { LoginDto } from '../dto/login.dto';
 import { JwtService } from './jwt.service';
 import { JwtPayload } from '../interfaces/jwt.interface';
@@ -20,6 +23,8 @@ import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { VerifyResetCodeDto } from '../dto/verify-reset-code.dto'; // Make sure to create this DTO
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { response } from 'express';
+import { RefreshTokenService } from './refresh-token.service';
+import { RefreshResponseDto } from '../dto/refresh-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +37,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
     private readonly resetTokenService: ResetTokenService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {
     this.userServiceMap = new Map<Role, IBaseUserService<BaseAccount>>([
       [Role.USER, userService],
@@ -59,7 +65,7 @@ export class AuthService {
     try {
       await this.emailService.sendWelcomeEmail(input.email, input.username);
     } catch (error) {
-       console.error('Failed to send welcome email', error);
+      console.error('Failed to send welcome email', error);
     }
     const response = this.buildAuthResponse(entity);
     return response;
@@ -88,7 +94,7 @@ export class AuthService {
   async forgotPassword(input: ForgotPasswordDto) {
     const service = this.getServiceOrThrow(input.role);
     const user = await service.findByEmail(input.email);
-    
+
     // Security: Always return success to prevent email enumeration
     if (!user) {
       return { message: 'If email exists, verification code sent.' };
@@ -96,7 +102,7 @@ export class AuthService {
 
     // Generate and send the 6-digit code
     await this.resetTokenService.generateAndSendToken(input.email, input.role);
-    
+
     return { message: 'Verification code sent.' };
   }
 
@@ -106,9 +112,9 @@ export class AuthService {
     // This throws an error if invalid, otherwise returns true
     await this.resetTokenService.verifyToken(dto.email, dto.token, dto.role);
 
-    return { 
-      valid: true, 
-      message: 'Code is valid. Please proceed to set a new password.' 
+    return {
+      valid: true,
+      message: 'Code is valid. Please proceed to set a new password.',
     };
   }
 
@@ -119,12 +125,14 @@ export class AuthService {
     await this.resetTokenService.verifyToken(dto.email, dto.token, dto.role);
 
     // B. Hash new password
-    const hashedPassword = await this.passwordService.hashPassword(dto.newPassword);
-    
+    const hashedPassword = await this.passwordService.hashPassword(
+      dto.newPassword,
+    );
+
     // C. Update Password in DB
     const service = this.getServiceOrThrow(dto.role);
     // Ensure your user/brand services have this method
-    await service.updatePassword(dto.email, hashedPassword); 
+    await service.updatePassword(dto.email, hashedPassword);
 
     // D. Clean up used code
     await this.resetTokenService.deleteCode(dto.email, dto.role);
@@ -132,6 +140,82 @@ export class AuthService {
     return { message: 'Password reset successful.' };
   }
 
+  //`========================= LOGOUT =========================
+  async logout(id: string, role: Role): Promise<void> {
+    try {
+      await this.refreshTokenService.revokeAllTokensForEntity(role, id);
+    } catch (error) {
+      console.error('Failed to revoke refresh tokens on logout', error);
+      throw new BadRequestException('Logout failed');
+    }
+  }
+
+  // ========================= REFRESH TOKEN =========================
+  async refreshToken(
+    payload: JwtPayload,
+    storedRTToken: any,
+  ): Promise<RefreshResponseDto> {
+    const { sub: entityId, role, email } = payload;
+    if (!storedRTToken) {
+      throw new UnauthorizedException(
+        'Refresh token not found, revoked, or expired',
+      );
+    }
+    try {
+      await this.refreshTokenService.revokeRefreshToken(
+        storedRTToken.tokenHash,
+      );
+    } catch (error) {
+      console.error('Failed to revoke old refresh token', error);
+      throw new BadRequestException('Could not revoke old refresh token');
+    }
+    const userPayload: JwtPayload = {
+      sub: entityId,
+      role,
+      email,
+    };
+
+    // 3️⃣ Generate new tokens
+    const newAccessToken = this.jwtService.generateAccessToken(userPayload);
+    const newRefreshTokenData = this.jwtService.generateRefreshToken(userPayload);
+
+    // 4️⃣ Store the new refresh token
+    try {
+      await this.refreshTokenService.createRefreshToken({
+        rawToken: newRefreshTokenData.refreshToken,
+        entityId,
+        role,
+        expiresIn: newRefreshTokenData.expiresIn,
+      });
+    } catch (error) {
+      console.error('Failed to store new refresh token', error);
+      throw new BadRequestException('Failed to create new refresh token');
+    }
+
+    // 5️⃣ Fetch user data
+    const service = this.getServiceOrThrow(role);
+    const entity = await service.findById(entityId);
+    if (!entity) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const user: UserResponseDto = {
+      id: entity.id,
+      email: entity.email,
+      username: entity.username,
+      role: entity.role,
+      firstName: role === Role.USER ? (entity as any).firstName : undefined,
+      lastName: role === Role.USER ? (entity as any).lastName : undefined,
+      brandName: role === Role.BRAND ? (entity as any).brandName : undefined,
+    };
+
+    // 6️⃣ Return new tokens + user info
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshTokenData.refreshToken,
+      user,
+    };
+  }
   // ========================= PRIVATE HELPERS =========================
 
   private async resolveAccount(emailOrUsername: string): Promise<BaseAccount> {
@@ -143,28 +227,51 @@ export class AuthService {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  private buildAuthResponse(entity: BaseAccount): AuthResponseDto {
+  private async buildAuthResponse(
+    entity: BaseAccount,
+  ): Promise<AuthResponseDto> {
     const payload: JwtPayload = {
       sub: entity.id,
       role: entity.role,
       email: entity.email,
-      username: entity.username,
     };
-
-    const accessToken = this.jwtService.generateToken(payload);
-
+    try {
+      await this.refreshTokenService.revokeAllTokensForEntity(
+        entity.role,
+        entity.id,
+      );
+    } catch (error) {
+      console.error('Failed to revoke old refresh tokens', error);
+    }
+    const accessToken = this.jwtService.generateAccessToken(payload);
+    const refreshTokenData = this.jwtService.generateRefreshToken(payload);
+    try {
+      await this.refreshTokenService.createRefreshToken({
+        rawToken: refreshTokenData.refreshToken,
+        entityId: entity.id,
+        role: entity.role,
+        expiresIn: refreshTokenData.expiresIn,
+      });
+    } catch (error) {
+      console.error('Failed to create refresh token', error);
+      throw new BadRequestException('Failed to create refresh token');
+    }
     const user: UserResponseDto = {
       id: entity.id,
       email: entity.email,
       username: entity.username,
       role: entity.role,
-      firstName: entity.role === Role.USER ? (entity as any).firstName : undefined,
-      lastName: entity.role === Role.USER ? (entity as any).lastName : undefined,
-      brandName: entity.role === Role.BRAND ? (entity as any).brandName : undefined,
+      firstName:
+        entity.role === Role.USER ? (entity as any).firstName : undefined,
+      lastName:
+        entity.role === Role.USER ? (entity as any).lastName : undefined,
+      brandName:
+        entity.role === Role.BRAND ? (entity as any).brandName : undefined,
     };
 
     return {
       accessToken,
+      refreshToken: refreshTokenData.refreshToken,
       user,
     };
   }

@@ -23,7 +23,7 @@ export class RegistrationDto {
   password: string;
 
   @IsString()
-  @MinLength(3, { message: 'Username must be at least 3 characters' })
+  @MinLength(6, { message: 'Username must be at least 6 characters' })
   @Match('password', { message: 'Password confirmation does not match password' })
   passwordConfirmation: string;
 
