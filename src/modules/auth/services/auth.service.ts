@@ -65,7 +65,7 @@ export class AuthService {
     try {
       await this.emailService.sendWelcomeEmail(input.email, input.username);
     } catch (error) {
-      console.error('Failed to send welcome email', error);
+      console.error('Failed to send welcome email');
     }
     const response = this.buildAuthResponse(entity);
     return response;
