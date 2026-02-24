@@ -4,15 +4,10 @@ import {
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { BrandService } from 'src/modules/brand/services/brand.service';
 import { Role } from 'src/modules/common/enums/role.enum';
 import { UserService } from 'src/modules/user/services/user.service';
 import { PasswordService } from './password.service';
 import { RegistrationDto } from '../dto/registration.dto';
-import {
-  BaseAccount,
-  IBaseUserService,
-} from '../interfaces/base-user.interface';
 import { LoginDto } from '../dto/login.dto';
 import { JwtService } from './jwt.service';
 import { JwtPayload } from '../interfaces/jwt.interface';
@@ -22,36 +17,31 @@ import { ResetTokenService } from './reset-token.service';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { VerifyResetCodeDto } from '../dto/verify-reset-code.dto'; // Make sure to create this DTO
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
-import { response } from 'express';
 import { RefreshTokenService } from './refresh-token.service';
 import { RefreshResponseDto } from '../dto/refresh-response.dto';
+import { BaseUsersService } from './base-user.service';
+import { BaseUser } from '../entities/base-user.entity';
 
 @Injectable()
 export class AuthService {
-  private readonly userServiceMap: Map<Role, IBaseUserService<BaseAccount>>;
 
   constructor(
-    private readonly userService: UserService,
-    private readonly brandService: BrandService,
+    private readonly baseUserService: BaseUsersService,
     private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
     private readonly resetTokenService: ResetTokenService,
     private readonly refreshTokenService: RefreshTokenService,
   ) {
-    this.userServiceMap = new Map<Role, IBaseUserService<BaseAccount>>([
-      [Role.USER, userService],
-      [Role.BRAND, brandService],
-    ]);
   }
 
   // ========================= REGISTER =========================
 
   async register(input: RegistrationDto): Promise<AuthResponseDto> {
-    const service = this.getServiceOrThrow(input.role);
-
-    await this.ensureEmailNotTaken(service, input.email);
-    await this.ensureUsernameNotTaken(service, input.username);
+    if(input.role==Role.ADMIN){
+      throw new BadRequestException('Cannot register as admin');
+    }
+    await this.ensureEmailNotTaken(input.email);
 
     const hashedPassword = await this.passwordService.hashPassword(
       input.password,
@@ -59,11 +49,11 @@ export class AuthService {
 
     const dtoWithHashed = { ...input, password: hashedPassword };
 
-    const entity = await service.register(dtoWithHashed);
+    const entity = await this.baseUserService.createBaseUser(dtoWithHashed);
 
     // Send Welcome Email (Non-blocking)
     try {
-      await this.emailService.sendWelcomeEmail(input.email, input.username);
+      await this.emailService.sendWelcomeEmail(input.email, input.email);
     } catch (error) {
       console.error('Failed to send welcome email');
     }
@@ -74,8 +64,10 @@ export class AuthService {
   // ========================= LOGIN =========================
 
   async login(input: LoginDto): Promise<AuthResponseDto> {
-    const entity = await this.resolveAccount(input.emailOrUsername);
-
+    const entity = await this.baseUserService.findByEmail(input.email);
+    if (!entity) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     const passwordValid = await this.passwordService.verifyPassword(
       input.password,
       entity.password,
@@ -92,16 +84,15 @@ export class AuthService {
 
   // STEP 1: Request Code
   async forgotPassword(input: ForgotPasswordDto) {
-    const service = this.getServiceOrThrow(input.role);
-    const user = await service.findByEmail(input.email);
+    const BaseUser = await this.baseUserService.findByEmail(input.email);
 
     // Security: Always return success to prevent email enumeration
-    if (!user) {
+    if (!BaseUser) {
       return { message: 'If email exists, verification code sent.' };
     }
 
     // Generate and send the 6-digit code
-    await this.resetTokenService.generateAndSendToken(input.email, input.role);
+    await this.resetTokenService.generateAndSendToken(BaseUser.id, input.email);
 
     return { message: 'Verification code sent.' };
   }
@@ -110,8 +101,11 @@ export class AuthService {
   // This is the function you requested to just check if the code is right
   async verifyResetCode(dto: VerifyResetCodeDto) {
     // This throws an error if invalid, otherwise returns true
-    await this.resetTokenService.verifyToken(dto.email, dto.token, dto.role);
-
+    const BaseUser = await this.baseUserService.findByEmail(dto.email);
+    if (!BaseUser) {
+      throw new BadRequestException('Invalid email or code.');
+    }
+    await this.resetTokenService.verifyToken(BaseUser.id, dto.token);
     return {
       valid: true,
       message: 'Code is valid. Please proceed to set a new password.',
@@ -120,22 +114,20 @@ export class AuthService {
 
   // STEP 3: Change Password (Action)
   async resetPassword(dto: ResetPasswordDto) {
-    // A. Verify the code AGAIN (Stateless security check)
-    // We must ensure the code is valid at the moment of password change
-    await this.resetTokenService.verifyToken(dto.email, dto.token, dto.role);
-
+    const BaseUser = await this.baseUserService.findByEmail(dto.email);
+    if (!BaseUser) {
+      throw new BadRequestException('Invalid email or code.');
+    }
+    await this.resetTokenService.verifyToken(BaseUser.id, dto.token);
     // B. Hash new password
     const hashedPassword = await this.passwordService.hashPassword(
       dto.newPassword,
     );
-
-    // C. Update Password in DB
-    const service = this.getServiceOrThrow(dto.role);
-    // Ensure your user/brand services have this method
-    await service.updatePassword(dto.email, hashedPassword);
+    // C. Update Password in D
+    await this.baseUserService.updatePassword(BaseUser.id, hashedPassword);
 
     // D. Clean up used code
-    await this.resetTokenService.deleteCode(dto.email, dto.role);
+    await this.resetTokenService.deleteCode(BaseUser.id);
 
     return { message: 'Password reset successful.' };
   }
@@ -143,7 +135,7 @@ export class AuthService {
   //`========================= LOGOUT =========================
   async logout(id: string, role: Role): Promise<void> {
     try {
-      await this.refreshTokenService.revokeAllTokensForEntity(role, id);
+      await this.refreshTokenService.revokeAllTokensForEntity(id);
     } catch (error) {
       console.error('Failed to revoke refresh tokens on logout', error);
       throw new BadRequestException('Logout failed');
@@ -184,7 +176,6 @@ export class AuthService {
       await this.refreshTokenService.createRefreshToken({
         rawToken: newRefreshTokenData.refreshToken,
         entityId,
-        role,
         expiresIn: newRefreshTokenData.expiresIn,
       });
     } catch (error) {
@@ -193,8 +184,7 @@ export class AuthService {
     }
 
     // 5️⃣ Fetch user data
-    const service = this.getServiceOrThrow(role);
-    const entity = await service.findById(entityId);
+    const entity = await this.baseUserService.findById(entityId);
     if (!entity) {
       throw new UnauthorizedException('User not found');
     }
@@ -202,11 +192,7 @@ export class AuthService {
     const user: UserResponseDto = {
       id: entity.id,
       email: entity.email,
-      username: entity.username,
       role: entity.role,
-      firstName: role === Role.USER ? (entity as any).firstName : undefined,
-      lastName: role === Role.USER ? (entity as any).lastName : undefined,
-      brandName: role === Role.BRAND ? (entity as any).brandName : undefined,
     };
 
     // 6️⃣ Return new tokens + user info
@@ -217,18 +203,8 @@ export class AuthService {
     };
   }
   // ========================= PRIVATE HELPERS =========================
-
-  private async resolveAccount(emailOrUsername: string): Promise<BaseAccount> {
-    // Try to find user in all services (User, Brand, etc.)
-    for (const service of this.userServiceMap.values()) {
-      const entity = await service.findByEmailOrUsername(emailOrUsername);
-      if (entity) return entity;
-    }
-    throw new UnauthorizedException('Invalid credentials');
-  }
-
   private async buildAuthResponse(
-    entity: BaseAccount,
+    entity: BaseUser,
   ): Promise<AuthResponseDto> {
     const payload: JwtPayload = {
       sub: entity.id,
@@ -237,7 +213,6 @@ export class AuthService {
     };
     try {
       await this.refreshTokenService.revokeAllTokensForEntity(
-        entity.role,
         entity.id,
       );
     } catch (error) {
@@ -249,7 +224,6 @@ export class AuthService {
       await this.refreshTokenService.createRefreshToken({
         rawToken: refreshTokenData.refreshToken,
         entityId: entity.id,
-        role: entity.role,
         expiresIn: refreshTokenData.expiresIn,
       });
     } catch (error) {
@@ -259,14 +233,7 @@ export class AuthService {
     const user: UserResponseDto = {
       id: entity.id,
       email: entity.email,
-      username: entity.username,
       role: entity.role,
-      firstName:
-        entity.role === Role.USER ? (entity as any).firstName : undefined,
-      lastName:
-        entity.role === Role.USER ? (entity as any).lastName : undefined,
-      brandName:
-        entity.role === Role.BRAND ? (entity as any).brandName : undefined,
     };
 
     return {
@@ -277,28 +244,11 @@ export class AuthService {
   }
 
   private async ensureEmailNotTaken(
-    service: IBaseUserService<BaseAccount>,
     email: string,
   ) {
-    const exists = await service.findByEmail(email);
+    const exists = await this.baseUserService.findByEmail(email);
     if (exists) {
       throw new ConflictException('Email already exists');
     }
-  }
-
-  private async ensureUsernameNotTaken(
-    service: IBaseUserService<BaseAccount>,
-    username: string,
-  ) {
-    const exists = await service.findByUsername(username);
-    if (exists) {
-      throw new ConflictException('Username already exists');
-    }
-  }
-
-  private getServiceOrThrow(role: Role): IBaseUserService<any> {
-    const service = this.userServiceMap.get(role);
-    if (!service) throw new BadRequestException(`Unknown role: ${role}`);
-    return service;
   }
 }

@@ -25,48 +25,5 @@ export class RegistrationDto {
   @IsString()
   @MinLength(6, { message: 'Username must be at least 6 characters' })
   @Match('password', { message: 'Password confirmation does not match password' })
-  passwordConfirmation: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'Username is required' })
-  username: string;
-
-  // Common optional fields
-  @IsOptional()
-  @IsString()
-  phoneNumber?: string;
-
-  @IsOptional()
-  @IsString()
-  bio?: string;
-
-  @IsOptional()
-  @IsString()
-  profileImageUrl?: string;
-
-  // User-specific fields
-  @ValidateIf(o => o.role === Role.USER)
-  @IsString()
-  @IsNotEmpty({ message: 'First name is required for USER' })
-  firstName?: string;
-
-  @ValidateIf(o => o.role === Role.USER)
-  @IsString()
-  @IsNotEmpty({ message: 'Last name is required for USER' })
-  lastName?: string;
-
-  @ValidateIf(o => o.role === Role.USER)
-  @IsEnum(Gender, { message: 'Gender must be a valid enum value' })
-  gender?: Gender;
-
-  // Brand-specific fields
-  @ValidateIf(o => o.role === Role.BRAND)
-  @IsString()
-  @IsNotEmpty({ message: 'Brand name is required for BRAND' })
-  brandName?: string;
-
-  @ValidateIf(o => o.role === Role.BRAND)
-  @IsOptional()
-  @IsUrl({}, { message: 'Website URL must be valid' })
-  websiteUrl?: string;
+  confirmationPassword: string;
 }

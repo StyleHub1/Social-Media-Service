@@ -7,6 +7,7 @@ import { AppModule } from '../../src/app.module';
 import { Role } from 'src/modules/common/enums/role.enum';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/modules/auth/services/email.service';
+import { testAccount } from '../utils/test-data';
 
 const mockEmailService = {
   sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
@@ -19,16 +20,6 @@ describe('Auth Logout (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
-
-  const testUser = {
-    email: 'logout_test@example.com',
-    username: 'logoutuser',
-    password: 'Password123!',
-    role: Role.USER,
-    firstName: 'Logout',
-    lastName: 'Test',
-  };
-
   beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:15-alpine')
       .withDatabase('test_db_logout')
@@ -75,9 +66,9 @@ describe('Auth Logout (E2E)', () => {
       await repository.query(`TRUNCATE TABLE "${entity.tableName}" CASCADE;`);
     }
 
-    const hashedPassword = await bcrypt.hash(testUser.password, 10);
-    await dataSource.getRepository('User').save({
-      ...testUser,
+    const hashedPassword = await bcrypt.hash(testAccount.password, 10);
+    await dataSource.getRepository('base_users').save({
+      ...testAccount,
       password: hashedPassword,
     });
   });
@@ -85,7 +76,7 @@ describe('Auth Logout (E2E)', () => {
   it('Login -> Logout should revoke refresh tokens', async () => {
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ emailOrUsername: testUser.email, password: testUser.password ,role:testUser.role})
+      .send({ email: testAccount.email, password: testAccount.password ,role:testAccount.role})
       .expect(200);
 
     const { accessToken, refreshToken } = loginRes.body;

@@ -1,17 +1,15 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class CreateUsersTable1707483900000 implements MigrationInterface {
-  name = 'CreateUsersTable1707483900000';
+export class CreateUserProfilesTable1707483902000 implements MigrationInterface {
+  name = 'CreateUserProfilesTable1707483902000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "users" (
+      CREATE TABLE "user_profiles" (
         "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-        "email" varchar(255) NOT NULL UNIQUE,
-        "password" varchar NOT NULL,
-        "role" varchar NOT NULL DEFAULT 'USER',
-        "isEmailVerified" boolean NOT NULL DEFAULT false,
-        "refreshToken" varchar,
+
+        "baseUserId" uuid NOT NULL UNIQUE,
+
         "firstName" varchar(100),
         "lastName" varchar(100),
         "username" varchar(100) NOT NULL UNIQUE,
@@ -20,15 +18,19 @@ export class CreateUsersTable1707483900000 implements MigrationInterface {
         "gender" varchar,
         "profileImageUrl" varchar,
         "status" varchar NOT NULL DEFAULT 'PENDING_VERIFICATION',
-        "createdAt" TIMESTAMP DEFAULT now(),
-        "updatedAt" TIMESTAMP DEFAULT now(),
-        "deletedAt" TIMESTAMP,
-        "lastLogin" TIMESTAMP
+
+        "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
+        "updatedAt" TIMESTAMP NOT NULL DEFAULT now(),
+
+        CONSTRAINT "FK_user_profile_base_user"
+          FOREIGN KEY ("baseUserId")
+          REFERENCES "base_users"("id")
+          ON DELETE CASCADE
       )
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "users"`);
+    await queryRunner.query(`DROP TABLE "user_profiles"`);
   }
 }

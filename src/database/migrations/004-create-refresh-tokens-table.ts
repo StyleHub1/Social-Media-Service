@@ -8,32 +8,25 @@ export class CreateRefreshTokensTable1707485100000 implements MigrationInterface
       CREATE TABLE "refresh_tokens" (
         "id" uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
         "tokenHash" varchar NOT NULL,
-        "userId" uuid,
-        "brandId" uuid,
+
+        "baseUserId" uuid NOT NULL,
+
         "expiresAt" TIMESTAMP NOT NULL,
         "isRevoked" boolean NOT NULL DEFAULT false,
         "ipAddress" varchar,
         "userAgent" varchar,
-        "createdAt" TIMESTAMP DEFAULT now(),
+        "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
 
-        CONSTRAINT "FK_refresh_user"
-          FOREIGN KEY ("userId")
-          REFERENCES "users"("id")
-          ON DELETE CASCADE,
-
-        CONSTRAINT "FK_refresh_brand"
-          FOREIGN KEY ("brandId")
-          REFERENCES "brands"("id")
+        CONSTRAINT "FK_refresh_base_user"
+          FOREIGN KEY ("baseUserId")
+          REFERENCES "base_users"("id")
           ON DELETE CASCADE
       )
     `);
 
     await queryRunner.query(`
-      CREATE INDEX "IDX_refresh_user" ON "refresh_tokens" ("userId")
-    `);
-
-    await queryRunner.query(`
-      CREATE INDEX "IDX_refresh_brand" ON "refresh_tokens" ("brandId")
+      CREATE INDEX "IDX_refresh_base_user"
+      ON "refresh_tokens" ("baseUserId")
     `);
   }
 
