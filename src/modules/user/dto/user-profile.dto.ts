@@ -23,6 +23,9 @@ export class UserProfileDto {
   @IsString()
   lastName?: string;
 
+  @IsString()
+  phoneNumber?: string;
+
   @IsEnum(Gender, { message: 'Gender must be a valid enum value' })
   gender?: Gender;
 

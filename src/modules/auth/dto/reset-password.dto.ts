@@ -27,5 +27,5 @@ export class ResetPasswordDto {
     @IsString()
     @IsNotEmpty()
     @Match('newPassword', { message: 'Password confirmation does not match new password' }) // 👈 Fixed: matches 'newPassword', not 'password'
-    newPasswordConfirm: string;
+    newConfirmationPassword: string;
 }

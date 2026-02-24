@@ -4,7 +4,7 @@ import { DataSource } from 'typeorm';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
-import { Role } from 'src/modules/common/enums/role.enum';
+import { testAccount } from '../utils/test-data';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/modules/auth/services/email.service';
 
@@ -19,16 +19,6 @@ describe('Auth Refresh Token (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
-
-  const testUser = {
-    email: 'refresh_test@example.com',
-    username: 'refreshuser',
-    password: 'Password123!',
-    role: Role.USER,
-    firstName: 'Refresh',
-    lastName: 'Test',
-  };
-
   beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:15-alpine')
       .withDatabase('test_db_refresh')
@@ -75,9 +65,9 @@ describe('Auth Refresh Token (E2E)', () => {
       await repository.query(`TRUNCATE TABLE "${entity.tableName}" CASCADE;`);
     }
 
-    const hashedPassword = await bcrypt.hash(testUser.password, 10);
-    await dataSource.getRepository('User').save({
-      ...testUser,
+    const hashedPassword = await bcrypt.hash(testAccount.password, 10);
+    await dataSource.getRepository('BaseUser').save({
+      ...testAccount,
       password: hashedPassword,
     });
   });
@@ -85,7 +75,7 @@ describe('Auth Refresh Token (E2E)', () => {
   it('Login -> Refresh Token should return new tokens', async () => {
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ emailOrUsername: testUser.email, password: testUser.password, role: testUser.role })
+      .send({ email: testAccount.email, password: testAccount.password, role: testAccount.role })
       .expect(200);
 
     expect(loginRes.body).toHaveProperty('accessToken');
@@ -98,7 +88,7 @@ describe('Auth Refresh Token (E2E)', () => {
 
     expect(refreshRes.body).toHaveProperty('accessToken');
     expect(refreshRes.body).toHaveProperty('refreshToken');
-    expect(refreshRes.body.user.email).toBe(testUser.email);
+    expect(refreshRes.body.user.email).toBe(testAccount.email);
 
     // Old refresh token should now be revoked
     await request(app.getHttpServer())

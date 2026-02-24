@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '../entities/user.entity';
+import { UserProfile } from "../entities/user-profile.entity";
 import { UserRepository } from '../repositories/user.repository';
 import { UserProfileDto } from '../dto/user-profile.dto';
 
@@ -8,37 +8,29 @@ export class UserService {
     constructor(
         private readonly userRepository: UserRepository
     ) {}
-    public async register(userData: Partial<User>): Promise<User> {
+    public async register(baseUserId: string, userData: Partial<UserProfile>): Promise<UserProfile> {
+        userData={...userData, baseUserId: baseUserId};
         try {
             return await this.userRepository.createUser(userData);
         } catch (error) {
-        if (error.code === '23505') { // PostgreSQL unique violation
-            throw new ConflictException('Email already exists');
+        if (error.code === '23505') {
+            throw new ConflictException('Username already exists');
         }
         throw error;
         }
     }
-
-    public async findByEmail(email: string): Promise<User | null> {
-        return await this.userRepository.findByEmail(email);
-    }
-
-    public async findByUsername(username: string): Promise<User | null> {
+    public async findByUsername(username: string): Promise<UserProfile | null> {
         return await this.userRepository.findByUsername(username);
     }
 
-    public async findByEmailOrUsername(emailOrUsername: string): Promise<User | null> {
-        return await this.userRepository.findByEmailOrUsername(emailOrUsername);
+    public async findById(id: string): Promise<UserProfile | null> {
+        return await this.userRepository.findById(id);
     }
-
-    public async findById(id: string): Promise<User | null> {
-        return await this.userRepository.findById(id);      
+    public async findByBaseUserId(baseUserId: string): Promise<UserProfile | null> {
+        return await this.userRepository.findByBaseUserId(baseUserId);
     }
-    public async updatePassword(email: string, hashedPassword: string): Promise<void> {
-        await this.userRepository.updatePassword(email, hashedPassword);}
-    
     public async getProfile(userId: string): Promise<UserProfileDto> {
-        const user = await this.userRepository.findById(userId);
+        const user = await this.userRepository.findByBaseUserId(userId);
         if (!user) {
             throw new NotFoundException('User not found');
         }
@@ -47,6 +39,7 @@ export class UserService {
             firstName: user.firstName,
             lastName: user.lastName,
             gender: user.gender,
+            phoneNumber: user.phoneNumber,
             numberOfFollowers: 0, // Placeholder, should be calculated based on followers table 
             numberOfFollowing: 0,// Placeholder, should be calculated based on followers table
             numberOfPosts: 0,// Placeholder, should be calculated based on posts table

@@ -3,8 +3,8 @@ import { Role } from "src/modules/common/enums/role.enum";
 
 export class LoginDto {
   @IsString()
-  @IsNotEmpty({ message: 'Email or username is required' })
-  emailOrUsername: string;
+  @IsNotEmpty({ message: 'Email is required' })
+  email: string;
 
   @IsNotEmpty()
   @IsString()

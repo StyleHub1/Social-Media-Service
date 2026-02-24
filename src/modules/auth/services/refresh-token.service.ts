@@ -15,7 +15,6 @@ export class RefreshTokenService {
   async createRefreshToken(data: {
     rawToken: string;
     entityId: string;
-    role: Role;
     expiresIn: string;
   }) {
     const tokenHash = this.hashToken(data.rawToken);
@@ -26,8 +25,7 @@ export class RefreshTokenService {
     const tokenEntity = await this.refreshTokenRepo.createToken({
       tokenHash,
       expiresAt,
-      userId: data.role === Role.USER ? data.entityId : undefined,
-      brandId: data.role === Role.BRAND ? data.entityId : undefined,
+      baseUserId: data.entityId
     });
 
     return tokenEntity;
@@ -56,19 +54,17 @@ export class RefreshTokenService {
     return token;
   }
   async revokeAllTokensForEntity(
-    entityType: Role,
     id: string,
-  ): Promise<number> {
-    return await this.refreshTokenRepo.revokeAllTokensForEntity(entityType, id);
+  ) {
+    await this.refreshTokenRepo.revokeAllTokensForEntity(id);
   }
   async deleteRefreshToken(tokenHash: string): Promise<void> {
     await this.refreshTokenRepo.deleteToken(tokenHash);
   }
   async deleteAllTokensForEntity(
-    entityType: Role,
     id: string,
-  ): Promise<number> {
-    return await this.refreshTokenRepo.deleteAllTokensForEntity(entityType, id);
+  ) {
+     await this.refreshTokenRepo.deleteAllTokensForEntity(id);
   }
   async getTokenByHash(tokenHash: string) {
     return await this.refreshTokenRepo.findByTokenHash(tokenHash);

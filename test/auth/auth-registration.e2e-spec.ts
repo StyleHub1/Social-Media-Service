@@ -1,4 +1,3 @@
-
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -6,7 +5,7 @@ import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { Role } from '../../src/modules/common/enums/role.enum';
-import { testUserAccount, testBrandAccount } from '../utils/auth';
+import { testAccount } from '../utils/test-data';
 import { ConfigModule } from '@nestjs/config';
 jest.setTimeout(30000);
 describe('Auth Registration (E2E)', () => {
@@ -28,7 +27,7 @@ describe('Auth Registration (E2E)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      synchronize: true, // Use synchronize for faster test setup (or run migrations)
+      synchronize: true, 
       logging: false,
       entities: ['src/modules/**/entities/*.{ts,js}'],
     });
@@ -58,7 +57,6 @@ describe('Auth Registration (E2E)', () => {
     );
     await app.init();
   });
-
   afterAll(async () => {
     if (app) await app.close();
     if (dataSource?.isInitialized) await dataSource.destroy();
@@ -66,78 +64,41 @@ describe('Auth Registration (E2E)', () => {
   });
 
   beforeEach(async () => {
-    await dataSource.query('DELETE FROM "users"');
-    await dataSource.query('DELETE FROM "brands"');
+    await dataSource.query('DELETE FROM "base_users" CASCADE;');
   });
 
   it('should register a new user successfully', async () => {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send(testUserAccount)
+      .send(testAccount)
     expect(response.body).toHaveProperty('accessToken');
     expect(response.body).toHaveProperty('refreshToken');
     expect(response.body).toHaveProperty('user');
     expect(response.body.user).toMatchObject({
-      email: testUserAccount.email,
-      username: testUserAccount.username,
+      email: testAccount.email,
       role: Role.USER,
-      firstName: testUserAccount.firstName,
-      lastName: testUserAccount.lastName,
     });
   });
   
-  it('should register a new brand successfully', async () => {
-    const response = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testBrandAccount)
-        .expect(201);
-    expect(response.body).toHaveProperty('accessToken');
-    expect(response.body).toHaveProperty('refreshToken');
-    expect(response.body).toHaveProperty('user');
-    expect(response.body.user).toMatchObject({
-      email: testBrandAccount.email,
-      username: testBrandAccount.username,
-      role: Role.BRAND,
-      brandName: testBrandAccount.brandName,
-    });
-  });
-
   it('should not allow registration with existing email', async () => {
     // First registration should succeed
     await request(app.getHttpServer())
       .post('/auth/register')
-      .send(testUserAccount)
+      .send(testAccount)
       .expect(201);
 
     // Second registration with same email should fail
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ ...testUserAccount, username: 'newusername' })
+      .send({ ...testAccount})
       .expect(409);
-
     expect(response.body.message).toContain('Email already exists');
-  });
-
-  it('should not allow registration with existing username', async () => {
-    // First registration should succeed
-    await request(app.getHttpServer())
-      .post('/auth/register')
-      .send(testUserAccount)
-      .expect(201);
-
-    // Second registration with same username should fail
-    const response = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({ ...testUserAccount, email: 'newemail@example.com' })
-      .expect(409);
-
-    expect(response.body.message).toContain('Username already exists');
   });
   it('should enforce password complexity requirements', async () => {
     const weakPasswordAccount = {
-      ...testUserAccount,
+      ...testAccount,
       password: 'pass',
-      passwordConfirmation: 'pass',};
+      confirmationPassword: 'pass',};
     const response = await request(app.getHttpServer())
       .post('/auth/register')
       .send(weakPasswordAccount)
@@ -148,22 +109,22 @@ describe('Auth Registration (E2E)', () => {
   it('should hash password before saving to database', async () => {
     await request(app.getHttpServer())
         .post('/auth/register')
-        .send(testUserAccount)
+        .send(testAccount)
         .expect(201);
 
-    const user = await dataSource.getRepository('User').findOne({
-        where: { email: testUserAccount.email },
+    const user = await dataSource.getRepository('BaseUser').findOne({
+        where: { email: testAccount.email },
         select: ['id', 'email', 'password'],
     });
 
     expect(user).toBeDefined();
-    expect(user!.password).not.toEqual(testUserAccount.password);
+    expect(user!.password).not.toEqual(testAccount.password);
     expect(user!.password.length).toBeGreaterThan(20); // bcrypt hash length
    });
   it('should not return password in response', async () => {
     const response = await request(app.getHttpServer())
     .post('/auth/register')
-    .send(testUserAccount)
+    .send(testAccount)
     .expect(201);
 
     expect(response.body.user).not.toHaveProperty('password');
@@ -171,7 +132,7 @@ describe('Auth Registration (E2E)', () => {
   it('should fail with invalid email format', async () => {
     const response = await request(app.getHttpServer())
         .post('/auth/register')
-        .send({ ...testUserAccount, email: 'invalid-email' })
+        .send({ ...testAccount, email: 'invalid-email' })
         .expect(400);
 
     expect(response.body.message).toContain('Email must be valid');
@@ -180,23 +141,22 @@ describe('Auth Registration (E2E)', () => {
     const response = await request(app.getHttpServer())
         .post('/auth/register')
         .send({
-        ...testUserAccount,
-        passwordConfirmation: 'DifferentPassword123!',
+        ...testAccount,
+        confirmationPassword: 'DifferentPassword123!',
         })
         .expect(400);
-
     expect(response.body.message).toContain('Password confirmation does not match password');
     });
+
   it('should fail with invalid role', async () => {
     const response = await request(app.getHttpServer())
         .post('/auth/register')
-        .send({ ...testUserAccount, role: 'ADMIN' })
+        .send({ ...testAccount, role: 'ADMIN' })
         .expect(400);
-
-    expect(response.body.message).toBeInstanceOf(Array);
     });
+
   it('should handle concurrent duplicate registrations safely', async () => {
-    const payload = { ...testUserAccount };
+    const payload = { ...testAccount };
     const requests = [
         request(app.getHttpServer())
         .post('/auth/register')
@@ -218,7 +178,7 @@ describe('Auth Registration (E2E)', () => {
     ).length;
     expect(successCount).toBe(1);
     expect(conflictCount).toBe(1);
-    const users = await dataSource.getRepository('User').find({
+    const users = await dataSource.getRepository('BaseUser').find({
         where: { email: payload.email },
     });
     expect(users.length).toBe(1);

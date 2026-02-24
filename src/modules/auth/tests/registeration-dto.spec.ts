@@ -9,14 +9,7 @@ describe('RegistrationDto', () => {
     dto.role = Role.USER;
     dto.email = 'test@example.com';
     dto.password = 'Password123!';
-    dto.passwordConfirmation = 'Password123!';
-    dto.username = 'testuser';
-    dto.firstName = 'Test';
-    dto.lastName = 'User';
-    dto.phoneNumber = '0123456789';
-    dto.gender = Gender.MALE;
-    dto.bio = 'Hello world';
-    dto.profileImageUrl = 'http://example.com/avatar.png';
+    dto.confirmationPassword = 'Password123!';
     return dto;
   };
 
@@ -25,17 +18,14 @@ describe('RegistrationDto', () => {
     dto.role = Role.BRAND;
     dto.email = 'brand@example.com';
     dto.password = 'BrandPass123!';
-    dto.passwordConfirmation = 'BrandPass123!';
-    dto.username = 'branduser';
-    dto.brandName = 'My Brand';
-    dto.websiteUrl = 'https://mybrand.com';
+    dto.confirmationPassword = 'BrandPass123!';
     return dto;
   };
 
   const getPasswordErrors = async (password: string) => {
     const dto = createValidUserDto();
     dto.password = password;
-    dto.passwordConfirmation = password;
+    dto.confirmationPassword = password;
 
     const errors = await validate(dto);
     return errors.find(e => e.property === 'password');
@@ -61,7 +51,7 @@ describe('RegistrationDto', () => {
 
   it('should fail when password and confirmation do not match', async () => {
     const dto = createValidUserDto();
-    dto.passwordConfirmation = 'DifferentPassword123!';
+    dto.confirmationPassword = 'DifferentPassword123!';
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);

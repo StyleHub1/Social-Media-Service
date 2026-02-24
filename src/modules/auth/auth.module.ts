@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './services/auth.service';
 import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Brand } from '../brand/entities/brand.entity';
-import { User } from '../user/entities/user.entity';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypedConfigService } from 'src/config/typed-config.service';
@@ -16,20 +14,23 @@ import { UserModule } from '../user/user.module';
 import { ATGuard } from './guards/AT.guard';
 import { EmailService } from './services/email.service';
 import { ResetTokenService } from './services/reset-token.service';
-import { ResetToken } from './entities/reset_tokens.entity';
+import { ResetToken } from './entities/reset-token.entity';
 import { ResetTokenRepository } from './repositories/reset-token.repository';
 import { emailConfig } from 'src/config/email.config';
 import { AtStrategy, RtStrategy } from './strategies';
-import { RefreshToken } from './entities/refresh_tokens.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import { RefreshTokenService } from './services/refresh-token.service';
+import { BaseUser } from './entities/base-user.entity';
+import { BaseUsersService } from './services/base-user.service';
+import { BaseUsersRepository } from './repositories/base-user.repository';
 
 
 @Module({
   imports: [
     BrandModule,
     UserModule,
-    TypeOrmModule.forFeature([Brand, User,ResetToken,RefreshToken]),
+    TypeOrmModule.forFeature([ResetToken,RefreshToken,BaseUser]),
     ConfigModule.forFeature(emailConfig
     ),
     ConfigModule.forFeature(authConfig),
@@ -52,7 +53,7 @@ import { RefreshTokenService } from './services/refresh-token.service';
       },
     }),
   ],
-  providers: [AuthService,PasswordService,JwtService,ATGuard,EmailService,ResetTokenService,ResetTokenRepository,AtStrategy,RtStrategy,RefreshTokenService,RefreshTokenRepository],
+  providers: [AuthService,PasswordService,JwtService,ATGuard,EmailService,ResetTokenService,ResetTokenRepository,AtStrategy,RtStrategy,RefreshTokenService,RefreshTokenRepository,BaseUsersService,BaseUsersRepository],
   controllers: [AuthController],
   exports:[JwtService,RefreshTokenRepository]
 })

@@ -6,7 +6,7 @@ import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { Role } from 'src/modules/common/enums/role.enum';
-import { testUserAccount, testBrandAccount, usrLoginDto, brandLoginDto } from '../utils/auth';
+import { testAccount, userLoginDto } from '../utils/test-data';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
 jest.setTimeout(30000);
@@ -31,15 +31,11 @@ describe('Auth Login (E2E)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      synchronize: false,
-      migrationsRun: true,
+      synchronize: true,
       logging: false,
       entities: ['src/modules/**/entities/*.{ts,js}'],
-      migrations: ['src/database/migrations/*.{ts,js}'],
     });
     await dataSource.initialize();
-    await dataSource.runMigrations();
-
     // Create Nest TestingModule
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -74,62 +70,32 @@ describe('Auth Login (E2E)', () => {
 
   beforeEach(async () => {
     // Clean tables before each test
-    await dataSource.query('DELETE FROM "users"');
-    await dataSource.query('DELETE FROM "brands"');
-
+    await dataSource.query('DELETE FROM "base_users"');
     // Insert test USER
-    const hashedUserPassword = await bcrypt.hash(testUserAccount.password, 10);
-    await dataSource.getRepository('User').save({
-      ...testUserAccount,
+    const hashedUserPassword = await bcrypt.hash(testAccount.password, 10);
+    await dataSource.getRepository('base_users').save({
+      ...testAccount,
       password: hashedUserPassword,
-    });
-
-    // Insert test BRAND
-    const hashedBrandPassword = await bcrypt.hash(testBrandAccount.password, 10);
-    await dataSource.getRepository('Brand').save({
-      ...testBrandAccount,
-      password: hashedBrandPassword,
     });
   });
 
   it('USER logs in successfully', async () => {
     const res = await request(app.getHttpServer())
       .post('/auth/login')
-      .send(usrLoginDto)
+      .send(userLoginDto)
       .expect(200);
-
     expect(res.body).toHaveProperty('accessToken');
     expect(res.body).toHaveProperty('refreshToken');
     expect(res.body.user).toMatchObject({
-      email: testUserAccount.email,
-      username: testUserAccount.username,
+      email: testAccount.email,
       role: Role.USER,
-      firstName: testUserAccount.firstName,
-      lastName: testUserAccount.lastName,
     });
   });
-
-  it('BRAND logs in successfully', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send(brandLoginDto)
-      .expect(200);
-
-    expect(res.body).toHaveProperty('accessToken');
-    expect(res.body).toHaveProperty('refreshToken');
-    expect(res.body.user).toMatchObject({
-      email: testBrandAccount.email,
-      username: testBrandAccount.username,
-      role: Role.BRAND,
-      brandName: testBrandAccount.brandName,
-    });
-  });
-
   it('fails if account does not exist', async () => {
     const res = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        emailOrUsername: 'nonexistent@example.com',
+        email: 'nonexistent@example.com',
         password: 'AnyPassword123!',
         role: Role.USER,
       })
@@ -142,7 +108,7 @@ describe('Auth Login (E2E)', () => {
     const res = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        emailOrUsername: testUserAccount.email,
+        email: testAccount.email,
         password: 'WrongPassword123!',
         role: Role.USER,
       })

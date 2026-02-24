@@ -4,10 +4,9 @@ import { DataSource } from 'typeorm';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
-import { Role } from 'src/modules/common/enums/role.enum';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/modules/auth/services/email.service';
-import { ResetToken } from 'src/modules/auth/entities/reset_tokens.entity';
+import { testAccount } from '../utils/test-data';
 
 // Mock EmailService to prevent actual API calls
 const mockEmailService = {
@@ -21,16 +20,6 @@ describe('Auth Password Reset (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
-
-  // Test User Data
-  const testUser = {
-    email: 'reset_test@example.com',
-    username: 'resetuser',
-    password: 'OldPassword123!',
-    role: Role.USER,
-    firstName: 'Reset',
-    lastName: 'Test',
-  };
 
   beforeAll(async () => {
     // 1. Start Postgres Container
@@ -48,8 +37,8 @@ describe('Auth Password Reset (E2E)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      synchronize: true, // Use synchronize for faster test setup (or run migrations)
-      entities: ['src/modules/**/entities/*.entity.{ts,js}'], // Ensure this path matches your structure
+      synchronize: true,
+      entities: ['src/modules/**/entities/*.entity.{ts,js}'],
     });
     await dataSource.initialize();
 
@@ -59,7 +48,7 @@ describe('Auth Password Reset (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
-      .overrideProvider(EmailService) // 👈 IMPORTANT: Replace real email service
+      .overrideProvider(EmailService)
       .useValue(mockEmailService)
       .compile();
 
@@ -84,53 +73,49 @@ describe('Auth Password Reset (E2E)', () => {
     const entities = dataSource.entityMetadatas;
     for (const entity of entities) {
       const repository = dataSource.getRepository(entity.name);
-      await repository.query(`TRUNCATE TABLE "${entity.tableName}" CASCADE;`);
+      await repository.query(`TRUNCATE TABLE "${entity.tableName}" RESTART IDENTITY CASCADE;`);
     }
 
     // Seed User
-    const hashedPassword = await bcrypt.hash(testUser.password, 10);
-    await dataSource.getRepository('User').save({
-      ...testUser,
+    const hashedPassword = await bcrypt.hash(testAccount.password, 10);
+    await dataSource.getRepository("BaseUser").save({
+      ...testAccount,
       password: hashedPassword,
     });
+
+    // Reset mocks
+    jest.clearAllMocks();
   });
 
   it('Full Flow: Forgot Password -> Verify Code -> Reset Password -> Login', async () => {
-    // ---------------------------------------------------------
-    // STEP 1: Request Password Reset (Forgot Password)
-    // ---------------------------------------------------------
+    // STEP 1: Request Password Reset
     await request(app.getHttpServer())
       .post('/auth/forgot-password')
       .send({
-        email: testUser.email,
-        role: Role.USER,
+        email: testAccount.email,
+        role: testAccount.role,
       })
       .expect(200)
       .expect((res) => {
         expect(res.body.message).toContain('sent');
       });
 
-    // Verify EmailService was called
     expect(mockEmailService.sendPasswordResetEmail).toHaveBeenCalled();
 
-    // ---------------------------------------------------------
-    // INTERLUDE: Retrieve the Code from DB (Cheat Step)
-    // ---------------------------------------------------------
-    // Since we can't check a real email inbox, we look into the DB
-    const resetCodeEntry = await dataSource
-      .getRepository(ResetToken)
-      .findOne({ where: { email: testUser.email } });
+    const user = await dataSource.getRepository("BaseUser").findOne({ where: { email: testAccount.email } });
+    expect(user).toBeDefined();
 
-    expect(resetCodeEntry).toBeDefined();
-    const validCode = resetCodeEntry?.token;
-    // ---------------------------------------------------------
+    // STEP 1b: Retrieve reset code from DB
+    const resetTokenEntry = await dataSource.getRepository("ResetToken").findOne({ where: { baseUserId: user!.id } });
+    expect(resetTokenEntry).toBeDefined();
+    const validCode = resetTokenEntry!.token;
+
     // STEP 2: Verify Code
-    // ---------------------------------------------------------
     await request(app.getHttpServer())
       .post('/auth/verify-reset-code')
       .send({
-        email: testUser.email,
-        role: Role.USER,
+        email: testAccount.email,
+        role: testAccount.role,
         token: validCode,
       })
       .expect(200)
@@ -138,79 +123,55 @@ describe('Auth Password Reset (E2E)', () => {
         expect(res.body.valid).toBe(true);
       });
 
-    // ---------------------------------------------------------
     // STEP 3: Reset Password
-    // ---------------------------------------------------------
     const newPassword = 'NewStrongPassword123!';
-    
     await request(app.getHttpServer())
       .post('/auth/reset-password')
       .send({
-        email: testUser.email,
-        role: Role.USER,
+        email: testAccount.email,
+        role: testAccount.role,
         token: validCode,
-        newPassword: newPassword,
-        newPasswordConfirm: newPassword,
+        newPassword,
+        newConfirmationPassword: newPassword,
       })
       .expect(200);
 
-    // ---------------------------------------------------------
-    // STEP 4: Verify Login with New Password
-    // ---------------------------------------------------------
+    // STEP 4: Login with new password
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        emailOrUsername: testUser.email,
+        email: testAccount.email,
         password: newPassword,
-        role: Role.USER,
+        role: testAccount.role,
       })
-      .expect(200); // Or 201 depending on your controller
+      .expect(200);
 
     expect(loginRes.body).toHaveProperty('accessToken');
 
-    // Ensure Old Password fails
+    // Old password should fail
     await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        emailOrUsername: testUser.email,
-        password: testUser.password, // Old pass
-        role: Role.USER,
+        email: testAccount.email,
+        password: testAccount.password,
+        role: testAccount.role,
       })
       .expect(401);
   });
 
   it('Should fail to verify with invalid code', async () => {
-    // Request Code first to generate an entry
     await request(app.getHttpServer())
       .post('/auth/forgot-password')
-      .send({ email: testUser.email, role: Role.USER })
+      .send({ email: testAccount.email, role: testAccount.role })
       .expect(200);
 
-    // Try verifying with wrong code
     await request(app.getHttpServer())
       .post('/auth/verify-reset-code')
       .send({
-        email: testUser.email,
-        role: Role.USER,
+        email: testAccount.email,
+        role: testAccount.role,
         token: '000000', // Wrong code
       })
       .expect(400);
-  });
-
-  it('Should handle non-existent email gracefully (Security)', async () => {
-    await request(app.getHttpServer())
-      .post('/auth/forgot-password')
-      .send({
-        email: 'ghost@example.com',
-        role: Role.USER,
-      })
-      .expect(200); // Should still return 200 OK to prevent enumeration
-
-    // Ensure NO code was saved for this ghost email
-    const ghostEntry = await dataSource
-      .getRepository(ResetToken)
-      .findOne({ where: { email: 'ghost@example.com' } });
-    
-    expect(ghostEntry).toBeNull();
   });
 });

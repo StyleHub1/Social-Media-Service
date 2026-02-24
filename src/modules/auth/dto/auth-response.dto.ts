@@ -9,19 +9,7 @@ export class UserResponseDto {
   email: string;
 
   @Expose()
-  username: string;
-
-  @Expose()
   role: Role;
-
-  @Expose()
-  firstName?: string;
-
-  @Expose()
-  lastName?: string;
-
-  @Expose()
-  brandName?: string;
 }
 
 export class AuthResponseDto {

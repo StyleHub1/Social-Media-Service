@@ -1,32 +1,50 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { BrandRepository } from '../repositories/brand.repository';
-import { Brand } from '../entities/brand.entity';
+import { BrandProfile } from '../entities/brand-profile.entity';
+import { BrandProfileDto } from '../dto/brand-profile.dto';
 
 @Injectable()
 export class BrandService {
     constructor(
         protected readonly brandRepository: BrandRepository
     ) {}
-    public async register(brandData: Partial<Brand>): Promise<Brand> {
+    public async register(baseUserId: string, brandData: Partial<BrandProfile>): Promise<BrandProfile> {
+        brandData = { ...brandData, baseUserId };
+        try {
         return await this.brandRepository.createBrand(brandData);
+        } catch (error) {
+        if (error.code === '23505') {
+            throw new ConflictException('Username already exists');
+        }
+        throw error;
+        }
     }
 
-    public async findByEmail(email: string): Promise<Brand | null> {
-        return await this.brandRepository.findByEmail(email);
-    }
-
-    public async findByUsername(username: string): Promise<Brand | null> {
+    public async findByUsername(username: string): Promise<BrandProfile | null> {
         return await this.brandRepository.findByUsername(username);
     }
 
-    public async findByEmailOrUsername(emailOrUsername: string): Promise<Brand | null> {
-        return await this.brandRepository.findByEmailOrUsername(emailOrUsername);
+    public async findById(id: string): Promise<BrandProfile | null> {
+        return await this.brandRepository.findById(id);
     }
 
-    public async findById(id: string): Promise<Brand | null> {
-        return await this.brandRepository.findById(id);
-    }      
-    public async updatePassword(email: string, hashedPassword: string): Promise<void> {
-        await this.brandRepository.updatePassword(email, hashedPassword);
+    public async findByBaseUserId(baseUserId: string): Promise<BrandProfile | null> {
+        return await this.brandRepository.findByBaseUserId(baseUserId);
+    }
+    public async getProfile(brandId: string): Promise<BrandProfileDto> {
+        const brand = await this.brandRepository.findByBaseUserId(brandId);
+        if (!brand) {
+            throw new NotFoundException('Brand not found');
+        }
+        const profile: BrandProfileDto = {
+            username: brand.username,
+            brandName: brand.brandName,
+            bio: brand.bio,
+            profileImageUrl: brand.profileImageUrl,
+            websiteUrl: brand.websiteUrl,
+            numberOfFollowers: 0, // Placeholder, should be calculated based on followers table
+            numberOfPosts: 0, // Placeholder, should be calculated based on posts table
+        };
+        return profile;
     }
 }
