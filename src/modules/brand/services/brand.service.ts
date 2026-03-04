@@ -8,7 +8,7 @@ export class BrandService {
     constructor(
         protected readonly brandRepository: BrandRepository
     ) {}
-    public async register(baseUserId: string, brandData: Partial<BrandProfile>): Promise<BrandProfile> {
+    public async completeProfile(baseUserId: string, brandData: Partial<BrandProfile>): Promise<BrandProfile> {
         brandData = { ...brandData, baseUserId };
         try {
         return await this.brandRepository.createBrand(brandData);

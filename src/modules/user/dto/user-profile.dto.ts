@@ -4,6 +4,7 @@ import {
   IsNumber
 } from 'class-validator';
 import { Gender } from 'src/modules/user/enums/user-gender';
+import { UserProfileImage } from '../entities/user-profile-image.entity';
 export class UserProfileDto {
   @IsString()
   @IsNotEmpty({ message: 'Username is required' })
@@ -15,7 +16,7 @@ export class UserProfileDto {
 
   @IsOptional()
   @IsString()
-  profileImageUrl?: string;
+  profileImage?: UserProfileImage;
 
   @IsString()
   firstName?: string;

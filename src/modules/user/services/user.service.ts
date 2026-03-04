@@ -2,13 +2,14 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { UserProfile } from "../entities/user-profile.entity";
 import { UserRepository } from '../repositories/user.repository';
 import { UserProfileDto } from '../dto/user-profile.dto';
+import { UserProfileUpdateDto } from '../dto/user-profile-update.dto';
 
 @Injectable()
 export class UserService {
     constructor(
         private readonly userRepository: UserRepository
     ) {}
-    public async register(baseUserId: string, userData: Partial<UserProfile>): Promise<UserProfile> {
+    public async completeProfile(baseUserId: string, userData: Partial<UserProfile>): Promise<UserProfile> {
         userData={...userData, baseUserId: baseUserId};
         try {
             return await this.userRepository.createUser(userData);
@@ -22,7 +23,6 @@ export class UserService {
     public async findByUsername(username: string): Promise<UserProfile | null> {
         return await this.userRepository.findByUsername(username);
     }
-
     public async findById(id: string): Promise<UserProfile | null> {
         return await this.userRepository.findById(id);
     }
@@ -44,9 +44,31 @@ export class UserService {
             numberOfFollowing: 0,// Placeholder, should be calculated based on followers table
             numberOfPosts: 0,// Placeholder, should be calculated based on posts table
             bio: user.bio,
-            profileImageUrl: user.profileImageUrl
+            profileImage: user.profileImage
 
         };
         return profile;
+    }
+    public async updateProfile(userId: string, updates: Partial<UserProfileUpdateDto>): Promise<UserProfileDto> {
+        const user = await this.userRepository.findByBaseUserId(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        if (updates.username && updates.username !== user.username) {
+            const existingUser = await this.userRepository.findByUsername(updates.username);
+            if (existingUser) {
+                throw new ConflictException('Username already exists');
+            }
+        }
+        Object.assign(user, updates);// This will update only the provided fields
+        const updatedUser = await this.userRepository.updateProfile(user);
+        return this.getProfile(updatedUser.baseUserId);
+    }
+    public async deleteProfile(userId: string): Promise<void> {
+        const user = await this.userRepository.findByBaseUserId(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        await this.userRepository.deleteUser(user.id);
     }
 }
