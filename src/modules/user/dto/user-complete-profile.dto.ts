@@ -1,7 +1,7 @@
 import { IsEnum, IsString } from "class-validator";
 import { Gender } from "../enums/user-gender";
 
-export class UserRegisterDto {
+export class UserUpdateProfileDto {
   @IsString()
   username: string;
   @IsString()
@@ -14,6 +14,4 @@ export class UserRegisterDto {
   bio?: string;
   @IsEnum(Gender, { message: 'Gender must be a valid enum value' })
   gender?: Gender;
-  @IsString()
-  profileImageUrl?: string;
 }

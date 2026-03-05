@@ -156,4 +156,33 @@ export class EmailService {
       throw new InternalServerErrorException('Failed to send password reset email');
     }
   }
+  async sendVerificationEmail(to: string, token: string) {
+  const email = new SibApiV3Sdk.SendSmtpEmail();
+
+  const verificationUrl = `http://localhost:8000/auth/verify-email?token=${token}`;
+
+  email.to = [{ email: to }];
+  email.sender = {
+    email: this.config.email.EMAIL_FROM,
+    name: this.config.email.EMAIL_NAME,
+  };
+
+  email.subject = 'Verify your email';
+
+  email.htmlContent = `
+    <h2>Email Verification</h2>
+    <p>Click the button below to verify your account:</p>
+    <a href="${verificationUrl}"
+       style="padding:10px 20px;background:#4f46e5;color:white;text-decoration:none;border-radius:6px;">
+       Verify Email
+    </a>
+    <p>This link expires in 15 minutes.</p>
+  `;
+  try{
+    await this.apiInstance.sendTransacEmail(email);
+    console.log(`Verification email sent to ${to}`);
+  } catch (err) {
+    console.log('Error sending verification email.');
+  }
+}
 }

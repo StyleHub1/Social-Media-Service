@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { BaseUser } from '../../auth/entities/base-user.entity';
 import { Gender } from '../enums/user-gender';
+import { UserProfileImage } from './user-profile-image.entity';
 
 @Entity('user_profiles')
 export class UserProfile {
@@ -33,8 +34,8 @@ export class UserProfile {
   @Column({ type: 'enum', enum: Gender})
   gender: Gender;
 
-  @Column({ nullable: true })
-  profileImageUrl: string;
+  @OneToOne(() => UserProfileImage, (image) => image.userProfile,{nullable: true})
+  profileImage: UserProfileImage;
 
   @Column({ default: 'PENDING_VERIFICATION' })
   status: string;

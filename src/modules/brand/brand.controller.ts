@@ -8,7 +8,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { BrandService } from './services/brand.service';
-import { UserRegisterDto } from '../user/dto/user-registration.dto';
+import { UserUpdateProfileDto } from '../user/dto/user-complete-profile.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { UserProfileDto } from '../user/dto/user-profile.dto';
@@ -26,13 +26,13 @@ export class BrandController {
   async getProfile(@CurrentUser() user: JwtPayload): Promise<BrandProfileDto> {
     return await this.brandService.getProfile(user.sub);
   }
-  @Post('/register')
+  @Post('/complete-profile')
   @Roles(Role.BRAND)
   @HttpCode(HttpStatus.CREATED)
-  async registerUserProfile(
+  async completeBrandProfile(
     @CurrentUser() user: JwtPayload,
     @Body() body: BrandRegisterDto,
   ) {
-    return await this.brandService.register(user.sub, body);
+    return await this.brandService.completeProfile(user.sub, body);
   }
 }

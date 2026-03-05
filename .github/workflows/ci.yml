@@ -35,6 +35,8 @@ jobs:
       JWT_REFRESH_TOKEN: my_test_refresh_jwt_secret
       JWT_REFRESH_EXPIRES_IN: 7d
       REFRESH_TOKEN_HASH_SECRET: my_test_refresh_token_hash_secret
+      JWT_EMAIL_VERIFICATION_SECRET: my_test_email_verification_secret
+      JWT_EMAIL_VERIFICATION_EXPIRES_IN: 1d
       
     steps:
       # 1️⃣ Checkout the code

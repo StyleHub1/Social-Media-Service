@@ -14,7 +14,6 @@ export class CreateBrandProfilesTable1707483903000 implements MigrationInterface
         "username" varchar(100) NOT NULL UNIQUE,
         "websiteUrl" varchar,
         "bio" varchar,
-        "profileImageUrl" varchar,
         "phoneNumber" varchar,
         "isVerified" boolean NOT NULL DEFAULT false,
         "status" varchar NOT NULL DEFAULT 'PENDING_VERIFICATION',

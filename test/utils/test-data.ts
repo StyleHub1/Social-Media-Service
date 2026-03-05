@@ -22,14 +22,12 @@ export const testUserProfile = {
   phoneNumber: '1234567890',
   bio: 'This is a new user.',
   gender: Gender.MALE,
-  profileImageUrl: 'https://example.com/profile.jpg',
 };
 export const testBrandProfile = {
     brandName: 'Test Brand',
     username: 'test_brand_user',
     websiteUrl: 'https://example.com',
     bio: 'This is a test brand.',
-    profileImageUrl: 'https://example.com/brand-profile.jpg',
     phoneNumber: '0987654321',
 }
 export const userLoginDto = {

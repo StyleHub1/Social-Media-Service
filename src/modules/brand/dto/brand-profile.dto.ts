@@ -10,8 +10,6 @@ export class BrandProfileDto {
   @IsString()
   bio?: string;
   @IsString()
-  profileImageUrl?: string;
-  @IsString()
   phoneNumber?: string;
   @IsNumber()
   numberOfFollowers?: number;

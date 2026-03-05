@@ -4,7 +4,6 @@ import { DataSource } from 'typeorm';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
-import { Role } from 'src/modules/common/enums/role.enum';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/modules/auth/services/email.service';
 import { testAccount } from '../utils/test-data';
@@ -70,6 +69,7 @@ describe('Auth Logout (E2E)', () => {
     await dataSource.getRepository('base_users').save({
       ...testAccount,
       password: hashedPassword,
+      isEmailVerified: true,
     });
   });
 

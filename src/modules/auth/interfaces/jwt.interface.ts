@@ -4,6 +4,7 @@ export interface JwtPayload {
   sub: string;
   role: Role;
   email: string;
+  isProfileComplete: boolean;
 }
 
 export interface JwtServiceInterface {

@@ -69,6 +69,7 @@ describe('Auth Refresh Token (E2E)', () => {
     await dataSource.getRepository('BaseUser').save({
       ...testAccount,
       password: hashedPassword,
+      isEmailVerified: true,
     });
   });
 
