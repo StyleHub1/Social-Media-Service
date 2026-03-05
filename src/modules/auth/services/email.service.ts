@@ -183,7 +183,6 @@ export class EmailService {
     console.log(`Verification email sent to ${to}`);
   } catch (err) {
     console.log('Error sending verification email.');
-    throw new InternalServerErrorException('Failed to send verification email');
   }
 }
 }
