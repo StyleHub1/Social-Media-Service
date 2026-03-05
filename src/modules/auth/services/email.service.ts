@@ -178,7 +178,12 @@ export class EmailService {
     </a>
     <p>This link expires in 15 minutes.</p>
   `;
-
-  await this.apiInstance.sendTransacEmail(email);
+  try{
+    await this.apiInstance.sendTransacEmail(email);
+    console.log(`Verification email sent to ${to}`);
+  } catch (err) {
+    console.log('Error sending verification email.');
+    throw new InternalServerErrorException('Failed to send verification email');
+  }
 }
 }
