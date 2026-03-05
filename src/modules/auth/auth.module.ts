@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AuthService } from './services/auth.service';
 import { AuthController } from './auth.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -29,7 +29,7 @@ import { BaseUsersRepository } from './repositories/base-user.repository';
 @Module({
   imports: [
     BrandModule,
-    UserModule,
+    forwardRef(() => UserModule),
     TypeOrmModule.forFeature([ResetToken,RefreshToken,BaseUser]),
     ConfigModule.forFeature(emailConfig
     ),
@@ -55,6 +55,6 @@ import { BaseUsersRepository } from './repositories/base-user.repository';
   ],
   providers: [AuthService,PasswordService,JwtService,ATGuard,EmailService,ResetTokenService,ResetTokenRepository,AtStrategy,RtStrategy,RefreshTokenService,RefreshTokenRepository,BaseUsersService,BaseUsersRepository],
   controllers: [AuthController],
-  exports:[JwtService,RefreshTokenRepository]
+  exports:[JwtService,RefreshTokenRepository,BaseUsersService,BaseUsersRepository]
 })
 export class AuthModule {}

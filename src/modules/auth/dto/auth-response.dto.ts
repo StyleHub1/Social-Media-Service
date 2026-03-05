@@ -10,6 +10,9 @@ export class UserResponseDto {
 
   @Expose()
   role: Role;
+
+  @Expose()
+  isProfileComplete: boolean;
 }
 
 export class AuthResponseDto {

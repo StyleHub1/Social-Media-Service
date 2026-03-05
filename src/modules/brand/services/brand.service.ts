@@ -40,7 +40,6 @@ export class BrandService {
             username: brand.username,
             brandName: brand.brandName,
             bio: brand.bio,
-            profileImageUrl: brand.profileImageUrl,
             websiteUrl: brand.websiteUrl,
             numberOfFollowers: 0, // Placeholder, should be calculated based on followers table
             numberOfPosts: 0, // Placeholder, should be calculated based on posts table

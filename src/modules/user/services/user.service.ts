@@ -3,16 +3,21 @@ import { UserProfile } from "../entities/user-profile.entity";
 import { UserRepository } from '../repositories/user.repository';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { UserProfileUpdateDto } from '../dto/user-profile-update.dto';
+import { BaseUsersService } from '@/modules/auth/services/base-user.service';
 
 @Injectable()
 export class UserService {
     constructor(
-        private readonly userRepository: UserRepository
+        private readonly userRepository: UserRepository,
+        private readonly BaseUserService: BaseUsersService,
     ) {}
     public async completeProfile(baseUserId: string, userData: Partial<UserProfile>): Promise<UserProfile> {
         userData={...userData, baseUserId: baseUserId};
         try {
-            return await this.userRepository.createUser(userData);
+            const userProfile = await this.userRepository.createUser(userData);
+            // Update the base user to indicate their profile is complete
+            await this.BaseUserService.updateBaseUser(baseUserId, { isProfileComplete: true });
+            return userProfile;
         } catch (error) {
         if (error.code === '23505') {
             throw new ConflictException('Username already exists');

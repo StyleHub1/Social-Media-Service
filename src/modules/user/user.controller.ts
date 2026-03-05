@@ -50,20 +50,20 @@ export class UserController {
     await this.userService.deleteProfile(user.sub);
     return { message: 'Profile deleted successfully' };
   }
-    @Post('/profile/image')
-  @Roles(Role.USER)
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadProfileImage(
-    @CurrentUser() user: JwtPayload,
-    @UploadedFile() file: Express.Multer.File[],
-  ) {
-    await this.userProfileImageService.uploadProfileImage(user.sub, file);
-    return { message: 'Image uploaded successfully' };
-  }
+    //   @Post('/profile/image')
+    // @Roles(Role.USER)
+    // @UseInterceptors(FileInterceptor('file'))
+    // async uploadProfileImage(
+    //   @CurrentUser() user: JwtPayload,
+    //   @UploadedFile() file: Express.Multer.File[],
+    // ) {
+    //   await this.userProfileImageService.uploadProfileImage(user.sub, file);
+    //   return { message: 'Image uploaded successfully' };
+    // }
 
-  @Get('/profile/image')
-  @Roles(Role.USER)
-  async getProfileImage(@CurrentUser() user: JwtPayload) {
-    return await this.userProfileImageService.getProfileImage(user.sub);
-  }
+    // @Get('/profile/image')
+    // @Roles(Role.USER)
+    // async getProfileImage(@CurrentUser() user: JwtPayload) {
+    //   return await this.userProfileImageService.getProfileImage(user.sub);
+    // }
 }

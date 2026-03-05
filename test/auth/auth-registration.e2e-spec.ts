@@ -71,13 +71,8 @@ describe('Auth Registration (E2E)', () => {
     const response = await request(app.getHttpServer())
       .post('/auth/register')
       .send(testAccount)
-    expect(response.body).toHaveProperty('accessToken');
-    expect(response.body).toHaveProperty('refreshToken');
-    expect(response.body).toHaveProperty('user');
-    expect(response.body.user).toMatchObject({
-      email: testAccount.email,
-      role: Role.USER,
-    });
+      .expect(201);
+    expect(response.body.message).toContain('Registration successful. Please verify your email. check your inbox for the verification link.');
   });
   
   it('should not allow registration with existing email', async () => {
@@ -120,14 +115,6 @@ describe('Auth Registration (E2E)', () => {
     expect(user).toBeDefined();
     expect(user!.password).not.toEqual(testAccount.password);
     expect(user!.password.length).toBeGreaterThan(20); // bcrypt hash length
-   });
-  it('should not return password in response', async () => {
-    const response = await request(app.getHttpServer())
-    .post('/auth/register')
-    .send(testAccount)
-    .expect(201);
-
-    expect(response.body.user).not.toHaveProperty('password');
    });
   it('should fail with invalid email format', async () => {
     const response = await request(app.getHttpServer())

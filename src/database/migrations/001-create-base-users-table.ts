@@ -11,6 +11,7 @@ export class CreateBaseUsersTable1707483901000 implements MigrationInterface {
         "password" varchar NOT NULL,
         "role" varchar NOT NULL,
         "isEmailVerified" boolean NOT NULL DEFAULT false,
+        "isProfileComplete" boolean NOT NULL DEFAULT false,
         "isActive" boolean NOT NULL DEFAULT true,
 
         "followersCount" integer NOT NULL DEFAULT 0,

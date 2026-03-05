@@ -70,6 +70,7 @@ describe('Auth Logout (E2E)', () => {
     await dataSource.getRepository('base_users').save({
       ...testAccount,
       password: hashedPassword,
+      isEmailVerified: true,
     });
   });
 

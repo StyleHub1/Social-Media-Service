@@ -5,6 +5,7 @@ import { JwtPayload, JwtServiceInterface } from '../interfaces/jwt.interface';
 import { AuthConfig } from '@/config/auth.config';
 import { TypedConfigService } from '@/config/typed-config.service';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class JwtService implements JwtServiceInterface {
@@ -22,7 +23,7 @@ export class JwtService implements JwtServiceInterface {
   generateAccessToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload, {
       secret: this.jwtConfig.secret,
-      expiresIn: this.jwtConfig.expiresIn, 
+      expiresIn: this.jwtConfig.expiresIn,
     });
   }
   generateRefreshToken(payload: JwtPayload): { refreshToken: string; expiresIn: string } {
@@ -32,7 +33,19 @@ export class JwtService implements JwtServiceInterface {
     });
     return { refreshToken : refreshToken, expiresIn: this.jwtConfig.refreshExpiresIn };
   }
-
+  generateEmailVerificationToken(email: string): string {
+    return this.jwtService.sign(
+      {
+        email,
+        type: 'email-verification',
+        jti: randomUUID(),
+      },
+      {
+        secret: this.jwtConfig.emailVerificationSecret,
+        expiresIn: this.jwtConfig.emailVerificationExpiresIn,
+      },
+    );
+  }
   verifyToken(token: string): JwtPayload {
     try {
       return this.jwtService.verify(token, {
@@ -49,6 +62,19 @@ export class JwtService implements JwtServiceInterface {
       }) as JwtPayload;
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+  verifyEmailVerificationToken(token: string): { email: string } {
+    try {
+      const payload = this.jwtService.verify(token, {
+        secret: this.jwtConfig.emailVerificationSecret,
+      }) as { email: string, type: string };
+      if (payload.type !== 'email-verification') {
+        throw new UnauthorizedException('Invalid email verification token');
+      }
+      return { email: payload.email };
+    } catch {
+      throw new UnauthorizedException('Invalid email verification token');
     }
   }
 

@@ -38,6 +38,9 @@ export class BaseUser {
   @Column({ default: false })
   isEmailVerified: boolean;
 
+  @Column({ default: false })
+  isProfileComplete: boolean;
+
   @Column({ default: true })
   isActive: boolean;
 

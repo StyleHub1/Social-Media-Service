@@ -48,4 +48,6 @@ export const appConfigSchema = Joi.object({
   JWT_REFRESH_TOKEN: Joi.string().required(),
   JWT_REFRESH_EXPIRES_IN: Joi.string().required(),
   REFRESH_TOKEN_HASH_SECRET: Joi.string().required(),
+  JWT_EMAIL_VERIFICATION_SECRET: Joi.string().required(),
+  JWT_EMAIL_VERIFICATION_EXPIRES_IN: Joi.string().required(),
 });
