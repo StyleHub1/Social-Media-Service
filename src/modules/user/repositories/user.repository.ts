@@ -26,10 +26,13 @@ export class UserRepository {
         await this.userRepository.update(id, updates);
         return await this.findById(id);
     }
-    async deleteUser(id: string): Promise<void> { // Soft delete to allow for potential recovery and auditing
-    await this.userRepository.softDelete(id);
+    async deleteUser(id: string): Promise<void> {
+    await this.userRepository.delete(id);
     }
     async findByBaseUserId(baseUserId: string): Promise<UserProfile | null> {
         return await this.userRepository.findOne({ where: { baseUserId } });
+    }
+    async updateProfile(user: UserProfile): Promise<UserProfile> {
+        return await this.userRepository.save(user);
     }
 }

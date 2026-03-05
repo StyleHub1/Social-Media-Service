@@ -9,6 +9,8 @@ export interface AuthConfig {
     refreshSecret: string;
     refreshExpiresIn: StringValue;
     refreshHashSecret: string;
+    emailVerificationSecret: string;
+    emailVerificationExpiresIn: StringValue;
   }
 }
 
@@ -19,5 +21,7 @@ export const authConfig = registerAs('auth', (): AuthConfig => ({
     refreshSecret: process.env.JWT_REFRESH_TOKEN || 'fallback_refresh_secret',
     refreshExpiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? '7d') as StringValue,
     refreshHashSecret: process.env.JWT_REFRESH_TOKEN_HASH_SECRET || 'fallback_refresh_hash_secret',
+    emailVerificationSecret: process.env.JWT_EMAIL_VERIFICATION_SECRET || 'fallback_email_verification_secret',
+    emailVerificationExpiresIn: (process.env.JWT_EMAIL_VERIFICATION_EXPIRES_IN ?? '24h') as StringValue,
   },
 }));

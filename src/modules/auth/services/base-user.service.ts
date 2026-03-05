@@ -36,7 +36,7 @@ export class BaseUsersService {
   /** Only update allowed fields */
   async updateBaseUser(
     id: string,
-    data: Partial<Pick<BaseUser, 'email' | 'role' | 'isActive'>>,
+    data: Partial<Pick<BaseUser, 'email' | 'role' | 'isActive'| 'isEmailVerified' | 'isProfileComplete'>>,
   ): Promise<BaseUser> {
     const updated = await this.baseUsersRepository.update(id, data);
     if (!updated) throw new NotFoundException('User not found');

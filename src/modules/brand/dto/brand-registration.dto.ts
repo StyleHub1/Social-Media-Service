@@ -10,7 +10,5 @@ export class BrandRegisterDto {
   @IsString()
   bio?: string;
   @IsString()
-  profileImageUrl?: string;
-  @IsString()
   phoneNumber?: string;
 }

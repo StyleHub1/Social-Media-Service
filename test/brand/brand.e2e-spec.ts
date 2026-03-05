@@ -93,12 +93,13 @@ describe('Brand Profile (E2E)', () => {
       await dataSource.getRepository('base_users').save({
         ...testBrandAccount,
         password: hashedPassword,
+        isEmailVerified: true,
       });
     });
 
     it('should return 401 if no token provided', async () => {
       await request(app.getHttpServer())
-        .post('/brand/register')
+        .post('/brand/complete-profile')
         .send(testBrandProfile)
         .expect(401);
     });
@@ -112,7 +113,7 @@ describe('Brand Profile (E2E)', () => {
       const token = loginRes.body.accessToken;
 
       const response = await request(app.getHttpServer())
-        .post('/brand/register')
+        .post('/brand/complete-profile')
         .set('Authorization', `Bearer ${token}`)
         .send(testBrandProfile)
         .expect(201);
@@ -133,6 +134,7 @@ describe('Brand Profile (E2E)', () => {
         ...testAccount,
         password: userHashed,
         role: Role.USER,
+        isEmailVerified: true,
       });
 
       const loginRes = await request(app.getHttpServer())
@@ -141,7 +143,7 @@ describe('Brand Profile (E2E)', () => {
         .expect(200);
 
       await request(app.getHttpServer())
-        .post('/brand/register')
+        .post('/brand/complete-profile')
         .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
         .send(testBrandProfile)
         .expect(403);
@@ -156,13 +158,13 @@ describe('Brand Profile (E2E)', () => {
       const token = loginRes.body.accessToken;
 
       await request(app.getHttpServer())
-        .post('/brand/register')
+        .post('/brand/complete-profile')
         .set('Authorization', `Bearer ${token}`)
         .send(testBrandProfile)
         .expect(201);
 
       const response = await request(app.getHttpServer())
-        .post('/brand/register')
+        .post('/brand/complete-profile')
         .set('Authorization', `Bearer ${token}`)
         .send({
           ...testBrandProfile,
@@ -179,7 +181,7 @@ describe('Brand Profile (E2E)', () => {
       const token = loginRes.body.accessToken;
 
       await request(app.getHttpServer())
-        .post('/brand/register')
+        .post('/brand/complete-profile')
         .set('Authorization', `Bearer ${token}`)
         .send(testBrandProfile)
         .expect(201);

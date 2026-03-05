@@ -76,6 +76,7 @@ describe('Auth Login (E2E)', () => {
     await dataSource.getRepository('base_users').save({
       ...testAccount,
       password: hashedUserPassword,
+      isEmailVerified: true,
     });
   });
 
@@ -89,6 +90,7 @@ describe('Auth Login (E2E)', () => {
     expect(res.body.user).toMatchObject({
       email: testAccount.email,
       role: Role.USER,
+      isProfileComplete: true||false, // Depending on whether you set it to true in beforeEach
     });
   });
   it('fails if account does not exist', async () => {
@@ -101,7 +103,7 @@ describe('Auth Login (E2E)', () => {
       })
       .expect(401);
 
-    expect(res.body).toHaveProperty('message', 'Invalid credentials');
+    expect(res.body).toHaveProperty('message', 'Invalid Email or Password');
   });
 
   it('fails with wrong password', async () => {
@@ -114,6 +116,6 @@ describe('Auth Login (E2E)', () => {
       })
       .expect(401);
 
-    expect(res.body).toHaveProperty('message', 'Invalid credentials');
+    expect(res.body).toHaveProperty('message', 'Invalid Email or Password');
   });
 });

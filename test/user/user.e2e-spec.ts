@@ -1,4 +1,4 @@
-// test/auth/login.e2e-spec.ts
+// test/user/user.e2e-spec.ts
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -19,7 +19,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
 jest.setTimeout(30000);
-describe('Auth Login (E2E)', () => {
+describe('User (E2E)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let container: StartedPostgreSqlContainer;
@@ -85,11 +85,12 @@ describe('Auth Login (E2E)', () => {
     await dataSource.getRepository('base_users').save({
       ...testAccount,
       password: hashedUserPassword,
+      isEmailVerified: true,
     });
   });
   it('should return 401 if no token provided', async () => {
     await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .send(testUserProfile)
       .expect(401);
   });
@@ -100,29 +101,27 @@ describe('Auth Login (E2E)', () => {
       .expect(200);
     const accessToken = LogInResponse.body.accessToken;
     const response = await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .set('Authorization', `Bearer ${accessToken}`)
       .send(testUserProfile)
       .expect(201);
     expect(response.body).toHaveProperty('id');
     expect(response.body.username).toBe('new_user');
     expect(response.body.bio).toBe('This is a new user.');
-    expect(response.body.profileImageUrl).toBe(
-      'https://example.com/profile.jpg',
-    );
   });
   it('should return 403 if role is not USER', async () => {
     const hashedPassword = await bcrypt.hash(testBrandAccount.password, 10);
     await dataSource.getRepository('base_users').save({
         ...testBrandAccount,
         password: hashedPassword,
+        isEmailVerified: true,
     });
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send(brandLoginDto)
       .expect(200);
     await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
       .send(testUserProfile)
       .expect(403);
@@ -136,13 +135,13 @@ describe('Auth Login (E2E)', () => {
     const token = loginRes.body.accessToken;
 
     await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .set('Authorization', `Bearer ${token}`)
       .send(testUserProfile)
       .expect(201);
 
     await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .set('Authorization', `Bearer ${token}`)
       .send(testUserProfile)
       .expect(409);
@@ -156,13 +155,13 @@ describe('Auth Login (E2E)', () => {
     const token = loginRes.body.accessToken;
 
     await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .set('Authorization', `Bearer ${token}`)
       .send(testUserProfile)
       .expect(201);
 
     await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .set('Authorization', `Bearer ${token}`)
       .send({
         ...testUserProfile,
@@ -177,7 +176,7 @@ describe('Auth Login (E2E)', () => {
       .expect(200);
     const token = loginRes.body.accessToken;
     await request(app.getHttpServer())
-      .post('/user/register')
+      .post('/user/complete-profile')
       .set('Authorization', `Bearer ${token}`)
       .send(testUserProfile)
       .expect(201);

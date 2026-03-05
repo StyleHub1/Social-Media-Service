@@ -8,7 +8,7 @@ export class BrandService {
     constructor(
         protected readonly brandRepository: BrandRepository
     ) {}
-    public async register(baseUserId: string, brandData: Partial<BrandProfile>): Promise<BrandProfile> {
+    public async completeProfile(baseUserId: string, brandData: Partial<BrandProfile>): Promise<BrandProfile> {
         brandData = { ...brandData, baseUserId };
         try {
         return await this.brandRepository.createBrand(brandData);
@@ -40,7 +40,6 @@ export class BrandService {
             username: brand.username,
             brandName: brand.brandName,
             bio: brand.bio,
-            profileImageUrl: brand.profileImageUrl,
             websiteUrl: brand.websiteUrl,
             numberOfFollowers: 0, // Placeholder, should be calculated based on followers table
             numberOfPosts: 0, // Placeholder, should be calculated based on posts table

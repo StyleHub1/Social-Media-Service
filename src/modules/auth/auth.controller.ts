@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ClassSerializerInterceptor, Controller, HttpCode, HttpStatus, Post, Req, SerializeOptions, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, ClassSerializerInterceptor, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, SerializeOptions, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthService } from './services/auth.service';
 import { RegistrationDto } from './dto/registration.dto';
 import { LoginDto } from './dto/login.dto';
@@ -22,7 +22,7 @@ export class AuthController {
     @Post('register')
     @Public()
     @HttpCode(HttpStatus.CREATED)
-    async register(@Body() input: RegistrationDto):Promise<AuthResponseDto>{
+    async register(@Body() input: RegistrationDto):Promise<{ message: string }> {
         return await this.authService.register(input);
     }
 
@@ -38,12 +38,12 @@ export class AuthController {
     async forgotPassword(@Body() input: ForgotPasswordDto) {
         return await this.authService.forgotPassword(input);
     }
-    @Post('verify-reset-code')
-    @Public()
-    @HttpCode(HttpStatus.OK)
-    async verifyResetCode(@Body() input: VerifyResetCodeDto) {
-        return await this.authService.verifyResetCode(input);
-    }
+    // @Post('verify-reset-code')
+    // @Public()
+    // @HttpCode(HttpStatus.OK)
+    // async verifyResetCode(@Body() input: VerifyResetCodeDto) {
+    //     return await this.authService.verifyResetCode(input);
+    // }
     @Post('reset-password')
     @Public()
     @HttpCode(HttpStatus.OK)
@@ -70,5 +70,11 @@ export class AuthController {
     const storedToken = req.refreshToken; // Stored refresh token entity
 
     return this.authService.refreshToken(payload, storedToken);
+    }
+    @Get('verify-email')
+    @Public()
+    @HttpCode(HttpStatus.OK)
+    async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
     }
 }

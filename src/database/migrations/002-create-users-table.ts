@@ -16,7 +16,6 @@ export class CreateUserProfilesTable1707483902000 implements MigrationInterface 
         "phoneNumber" varchar,
         "bio" varchar,
         "gender" varchar,
-        "profileImageUrl" varchar,
         "status" varchar NOT NULL DEFAULT 'PENDING_VERIFICATION',
 
         "createdAt" TIMESTAMP NOT NULL DEFAULT now(),

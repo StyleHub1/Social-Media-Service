@@ -37,36 +37,66 @@ export class AuthService {
 
   // ========================= REGISTER =========================
 
-  async register(input: RegistrationDto): Promise<AuthResponseDto> {
-    if(input.role==Role.ADMIN){
+  async register(input: RegistrationDto): Promise<{ message: string }> {
+    if (input.role === Role.ADMIN) {
       throw new BadRequestException('Cannot register as admin');
     }
+
     await this.ensureEmailNotTaken(input.email);
 
     const hashedPassword = await this.passwordService.hashPassword(
       input.password,
     );
 
-    const dtoWithHashed = { ...input, password: hashedPassword };
+    const entity = await this.baseUserService.createBaseUser({
+      ...input,
+      password: hashedPassword,
+      isEmailVerified: false,
+    });
 
-    const entity = await this.baseUserService.createBaseUser(dtoWithHashed);
+    const verificationToken =
+      this.jwtService.generateEmailVerificationToken(entity.email);
 
-    // Send Welcome Email (Non-blocking)
-    try {
-      await this.emailService.sendWelcomeEmail(input.email, input.email);
-    } catch (error) {
-      console.error('Failed to send welcome email');
-    }
-    const response = this.buildAuthResponse(entity);
-    return response;
+    await this.emailService.sendVerificationEmail(
+      entity.email,
+      verificationToken,
+    );
+
+    return {
+      message: 'Registration successful. Please verify your email. check your inbox for the verification link.',
+    };
   }
+
+  // ========================= EMAIL VERIFICATION =========================
+  async verifyEmail(token: string): Promise<{ message: string }> {
+  const { email } =
+    this.jwtService.verifyEmailVerificationToken(token);
+
+  const user = await this.baseUserService.findByEmail(email);
+
+  if (!user) {
+    throw new BadRequestException('User not found');
+  }
+
+  if (user.isEmailVerified) {
+    return { message: 'Email already verified' };
+  }
+
+  user.isEmailVerified = true;
+  await this.baseUserService.updateBaseUser(user.id, { isEmailVerified: true });
+
+  return { message: 'Email verified successfully' };
+}
 
   // ========================= LOGIN =========================
 
   async login(input: LoginDto): Promise<AuthResponseDto> {
     const entity = await this.baseUserService.findByEmail(input.email);
     if (!entity) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid Email or Password');
+    }
+    if (!entity.isEmailVerified) {
+      throw new UnauthorizedException('Email not verified. Please verify your email before logging in.');
     }
     const passwordValid = await this.passwordService.verifyPassword(
       input.password,
@@ -74,7 +104,7 @@ export class AuthService {
     );
 
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid Email or Password');
     }
 
     return this.buildAuthResponse(entity);
@@ -97,20 +127,20 @@ export class AuthService {
     return { message: 'Verification code sent.' };
   }
 
-  // STEP 2: Verify Code (Check Only)
-  // This is the function you requested to just check if the code is right
-  async verifyResetCode(dto: VerifyResetCodeDto) {
-    // This throws an error if invalid, otherwise returns true
-    const BaseUser = await this.baseUserService.findByEmail(dto.email);
-    if (!BaseUser) {
-      throw new BadRequestException('Invalid email or code.');
-    }
-    await this.resetTokenService.verifyToken(BaseUser.id, dto.token);
-    return {
-      valid: true,
-      message: 'Code is valid. Please proceed to set a new password.',
-    };
-  }
+  // // STEP 2: Verify Code (Check Only)
+  // // This is the function you requested to just check if the code is right
+  // async verifyResetCode(dto: VerifyResetCodeDto) {
+  //   // This throws an error if invalid, otherwise returns true
+  //   const BaseUser = await this.baseUserService.findByEmail(dto.email);
+  //   if (!BaseUser) {
+  //     throw new BadRequestException('Invalid email or code.');
+  //   }
+  //   await this.resetTokenService.verifyToken(BaseUser.id, dto.token);
+  //   return {
+  //     valid: true,
+  //     message: 'Code is valid. Please proceed to set a new password.',
+  //   };
+  // }
 
   // STEP 3: Change Password (Action)
   async resetPassword(dto: ResetPasswordDto) {
@@ -165,6 +195,7 @@ export class AuthService {
       sub: entityId,
       role,
       email,
+      isProfileComplete: payload.isProfileComplete,
     };
 
     // 3️⃣ Generate new tokens
@@ -193,6 +224,7 @@ export class AuthService {
       id: entity.id,
       email: entity.email,
       role: entity.role,
+      isProfileComplete: entity.isProfileComplete,
     };
 
     // 6️⃣ Return new tokens + user info
@@ -210,6 +242,7 @@ export class AuthService {
       sub: entity.id,
       role: entity.role,
       email: entity.email,
+      isProfileComplete: entity.isProfileComplete,
     };
     try {
       await this.refreshTokenService.revokeAllTokensForEntity(
@@ -234,6 +267,7 @@ export class AuthService {
       id: entity.id,
       email: entity.email,
       role: entity.role,
+      isProfileComplete: entity.isProfileComplete,
     };
 
     return {
