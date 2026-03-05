@@ -159,7 +159,7 @@ export class EmailService {
   async sendVerificationEmail(to: string, token: string) {
   const email = new SibApiV3Sdk.SendSmtpEmail();
 
-  const verificationUrl = `http://localhost:8000/auth/verify-email?token=${token}`;
+  const verificationUrl = `https://style-hub-social-media-be-d369dfc7ce40.herokuapp.com/auth/verify-email?token=${token}`;
 
   email.to = [{ email: to }];
   email.sender = {
