@@ -9,6 +9,8 @@ import { Role } from 'src/modules/common/enums/role.enum';
 import { testAccount, userLoginDto } from '../utils/test-data';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
+import { bool } from 'joi';
+import { isBoolean } from 'class-validator';
 jest.setTimeout(30000);
 describe('Auth Login (E2E)', () => {
   let app: INestApplication;
@@ -90,7 +92,7 @@ describe('Auth Login (E2E)', () => {
     expect(res.body.user).toMatchObject({
       email: testAccount.email,
       role: Role.USER,
-      isProfileComplete: true||false, // Depending on whether you set it to true in beforeEach
+      isProfileComplete: expect.any(Boolean),
     });
   });
   it('fails if account does not exist', async () => {

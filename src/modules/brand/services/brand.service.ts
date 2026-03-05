@@ -2,16 +2,21 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { BrandRepository } from '../repositories/brand.repository';
 import { BrandProfile } from '../entities/brand-profile.entity';
 import { BrandProfileDto } from '../dto/brand-profile.dto';
+import { BaseUsersService } from '../../auth/services/base-user.service';
 
 @Injectable()
 export class BrandService {
     constructor(
-        protected readonly brandRepository: BrandRepository
+        protected readonly brandRepository: BrandRepository,
+        private readonly BaseUserService: BaseUsersService
     ) {}
     public async completeProfile(baseUserId: string, brandData: Partial<BrandProfile>): Promise<BrandProfile> {
         brandData = { ...brandData, baseUserId };
         try {
-        return await this.brandRepository.createBrand(brandData);
+            const brand = await this.brandRepository.createBrand(brandData);
+            // Update the base user to indicate their profile is complete
+            await this.BaseUserService.updateBaseUser(baseUserId, { isProfileComplete: true });
+            return brand;
         } catch (error) {
         if (error.code === '23505') {
             throw new ConflictException('Username already exists');

@@ -4,7 +4,6 @@ import { DataSource } from 'typeorm';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
-import { Role } from '../../src/modules/common/enums/role.enum';
 import { testAccount } from '../utils/test-data';
 import { ConfigModule } from '@nestjs/config';
 jest.setTimeout(30000);

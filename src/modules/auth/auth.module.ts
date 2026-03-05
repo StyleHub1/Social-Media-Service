@@ -28,8 +28,8 @@ import { BaseUsersRepository } from './repositories/base-user.repository';
 
 @Module({
   imports: [
-    BrandModule,
     forwardRef(() => UserModule),
+    forwardRef(() => BrandModule),
     TypeOrmModule.forFeature([ResetToken,RefreshToken,BaseUser]),
     ConfigModule.forFeature(emailConfig
     ),

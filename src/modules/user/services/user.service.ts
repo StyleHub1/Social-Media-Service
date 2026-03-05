@@ -3,13 +3,13 @@ import { UserProfile } from "../entities/user-profile.entity";
 import { UserRepository } from '../repositories/user.repository';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { UserProfileUpdateDto } from '../dto/user-profile-update.dto';
-import { BaseUsersService } from '@/modules/auth/services/base-user.service';
+import { BaseUsersService } from '../../auth/services/base-user.service';
 
 @Injectable()
 export class UserService {
     constructor(
         private readonly userRepository: UserRepository,
-        private readonly BaseUserService: BaseUsersService,
+        private readonly BaseUserService: BaseUsersService
     ) {}
     public async completeProfile(baseUserId: string, userData: Partial<UserProfile>): Promise<UserProfile> {
         userData={...userData, baseUserId: baseUserId};
