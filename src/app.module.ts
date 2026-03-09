@@ -17,7 +17,8 @@ import { ATGuard } from './modules/auth/guards/AT.guard';
 import { RTGuard } from './modules/auth/guards/RT.guard';
 import { RolesGuard } from './modules/common/guards/roles.guard';
 import { APP_GUARD } from '@nestjs/core';
-
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
+import { SearchModule } from './modules/search/search.module';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync(
@@ -29,7 +30,7 @@ import { APP_GUARD } from '@nestjs/core';
           return {
             ...dbConfig,
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            autoLoadEntities: true, // الأفضل
+            autoLoadEntities: true, 
           };
         }
       }
@@ -46,6 +47,8 @@ import { APP_GUARD } from '@nestjs/core';
     UserModule,
     BrandModule,
     AuthModule,
+    CloudinaryModule,
+    SearchModule,
 
   ],
   controllers: [AppController],
@@ -63,7 +66,7 @@ import { APP_GUARD } from '@nestjs/core';
       provide: APP_GUARD,
       useClass: RolesGuard,
     },
-],
+  ],
 })
 export class AppModule {}
 // This code defines the main application module for a NestJS application. It imports necessary modules, sets up configuration management, and configures TypeORM for database interactions. The AppController and AppService are registered as controllers and providers, respectively.

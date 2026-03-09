@@ -1,11 +1,16 @@
+import { Role } from '@/modules/auth/entities/base-user.entity';
 import {
   IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, MaxLength, IsEnum, IsUrl, ValidateIf, 
   Matches,
-  IsNumber
+  IsNumber,
+  IsObject,
 } from 'class-validator';
 import { Gender } from 'src/modules/user/enums/user-gender';
-import { UserProfileImage } from '../entities/user-profile-image.entity';
 export class UserProfileDto {
+  @IsString()
+  id: string;
+  @IsEnum(Role)
+  type: Role.USER;
   @IsString()
   @IsNotEmpty({ message: 'Username is required' })
   username: string;
@@ -16,7 +21,7 @@ export class UserProfileDto {
 
   @IsOptional()
   @IsString()
-  profileImage?: UserProfileImage;
+  profileImageUrl?: string;
 
   @IsString()
   firstName?: string;
@@ -38,5 +43,11 @@ export class UserProfileDto {
 
   @IsNumber()
   numberOfPosts?: number;
+
+  @IsObject()
+  posts?: any;
+
+  @IsNumber()
+  score?: number; // Optional score field for search results
 
 }

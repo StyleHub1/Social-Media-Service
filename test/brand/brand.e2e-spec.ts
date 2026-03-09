@@ -1,3 +1,4 @@
+// test/brand/brand.e2e-spec.ts
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
@@ -97,6 +98,8 @@ describe('Brand Profile (E2E)', () => {
       });
     });
 
+    // --- POST /brand/complete-profile ---
+
     it('should return 401 if no token provided', async () => {
       await request(app.getHttpServer())
         .post('/brand/complete-profile')
@@ -163,7 +166,7 @@ describe('Brand Profile (E2E)', () => {
         .send(testBrandProfile)
         .expect(201);
 
-      const response = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .post('/brand/complete-profile')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -172,6 +175,9 @@ describe('Brand Profile (E2E)', () => {
         })
         .expect(409);
     });
+
+    // --- GET /brand/profile ---
+
     it('should get brand profile after creation', async () => {
       const loginRes = await request(app.getHttpServer())
         .post('/auth/login')
@@ -205,6 +211,133 @@ describe('Brand Profile (E2E)', () => {
       await request(app.getHttpServer())
         .get('/brand/profile')
         .set('Authorization', `Bearer ${loginRes.body.accessToken}`)
+        .expect(404);
+    });
+
+    // --- PATCH /brand/profile ---
+
+    it('should update brand profile successfully', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(brandLoginDto)
+        .expect(200);
+      const token = loginRes.body.accessToken;
+
+      // Complete profile
+      await request(app.getHttpServer())
+        .post('/brand/complete-profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send(testBrandProfile)
+        .expect(201);
+
+      // Update the profile
+      const updateRes = await request(app.getHttpServer())
+        .patch('/brand/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          brandName: 'Updated Brand Name',
+          bio: 'Our new brand bio',
+        })
+        .expect(200);
+
+      expect(updateRes.body.brandName).toBe('Updated Brand Name');
+      expect(updateRes.body.bio).toBe('Our new brand bio');
+      expect(updateRes.body.username).toBe(testBrandProfile.username); // Should be unchanged
+    });
+
+    it('should return 409 when updating to an already taken username', async () => {
+      // 1. Create a secondary brand user directly in the DB to hold the conflicting username
+      const hashedPass = await bcrypt.hash('password123', 10);
+      const secondBrandUser = await dataSource.getRepository('base_users').save({
+        email: 'second_brand@example.com',
+        password: hashedPass,
+        isEmailVerified: true,
+        role: Role.BRAND,
+      });
+      
+      await dataSource.getRepository('brand_profiles').save({
+        baseUserId: secondBrandUser.id,
+        username: 'taken_brand_username',
+        brandName: 'Taken Brand',
+      });
+
+      // 2. Login as the primary test brand
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(brandLoginDto)
+        .expect(200);
+      const token = loginRes.body.accessToken;
+
+      // 3. Complete profile for primary brand
+      await request(app.getHttpServer())
+        .post('/brand/complete-profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send(testBrandProfile)
+        .expect(201);
+
+      // 4. Attempt to patch username to the conflicting one
+      await request(app.getHttpServer())
+        .patch('/brand/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ username: 'taken_brand_username' })
+        .expect(409);
+    });
+
+    it('should return 404 when patching a profile that does not exist', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(brandLoginDto)
+        .expect(200);
+      const token = loginRes.body.accessToken;
+
+      await request(app.getHttpServer())
+        .patch('/brand/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ brandName: 'New Brand Name' })
+        .expect(404);
+    });
+
+    // --- DELETE /brand/account ---
+
+    it('should delete the brand profile and account successfully', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(brandLoginDto)
+        .expect(200);
+      const token = loginRes.body.accessToken;
+
+      // Complete profile
+      await request(app.getHttpServer())
+        .post('/brand/complete-profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send(testBrandProfile)
+        .expect(201);
+
+      // Delete account
+      await request(app.getHttpServer())
+        .delete('/brand/account')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      // Verify deletion by attempting to login again
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(brandLoginDto)
+        .expect(401);
+    });
+
+    it('should return 404 if trying to delete a non-existent brand profile', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(brandLoginDto)
+        .expect(200);
+      const token = loginRes.body.accessToken;
+
+      // Profile is never completed in this test block.
+      // BrandService.deleteProfile will throw a 404 since findByBaseUserId returns null.
+      await request(app.getHttpServer())
+        .delete('/brand/account')
+        .set('Authorization', `Bearer ${token}`)
         .expect(404);
     });
   });

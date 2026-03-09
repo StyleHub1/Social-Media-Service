@@ -1,7 +1,7 @@
-import { IsEnum, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString } from "class-validator";
 import { Gender } from "../enums/user-gender";
 
-export class UserUpdateProfileDto {
+export class UserCompleteProfileDto {
   @IsString()
   username: string;
   @IsString()
@@ -11,6 +11,7 @@ export class UserUpdateProfileDto {
   @IsString()
   phoneNumber?: string;
   @IsString()
+  @IsOptional()
   bio?: string;
   @IsEnum(Gender, { message: 'Gender must be a valid enum value' })
   gender?: Gender;
