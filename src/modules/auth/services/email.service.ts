@@ -90,8 +90,6 @@ export class EmailService {
       console.log(`Welcome/Verification email sent to ${to}`);
     } catch (err) {
       console.log('Error sending verification email.', err);
-      // It's a good practice to throw the error so the caller knows the email failed
-      throw new InternalServerErrorException('Failed to send verification email'); 
     }
   }
 
