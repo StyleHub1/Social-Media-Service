@@ -29,6 +29,9 @@ export class BrandProfile {
   @Column({ nullable: true })
   phoneNumber: string;
 
+  @Column({ nullable: true })
+  profileImageUrl: string;
+
   @Column({ default: false })
   isVerified: boolean;
 

@@ -1,6 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { ValidationPipe } from "@nestjs/common";
+import { BadRequestException, ValidationPipe } from "@nestjs/common";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,6 +10,15 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory:(errors) => {
+        const messages = 
+        Object.values(errors[0].constraints??{}).join(', ') || 'Validation failed';
+        return new BadRequestException({
+          statusCode: 400,
+          message: messages,
+          error: 'Bad Request'
+        })
+      }
     }),
   );
 

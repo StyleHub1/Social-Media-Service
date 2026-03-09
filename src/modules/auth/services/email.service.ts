@@ -9,7 +9,6 @@ export class EmailService {
   private apiInstance: SibApiV3Sdk.TransactionalEmailsApi;
 
   constructor(
-    // 👇 FIX: Inject the specific config namespace directly
     @Inject(emailConfig.KEY)
     private readonly config: ConfigType<typeof emailConfig>,
   ) {
@@ -28,21 +27,23 @@ export class EmailService {
     );
   }
 
-  // Send welcome email
-  async sendWelcomeEmail(to: string, name: string) {
+  // Combined Welcome & Verification Email
+  async sendVerificationEmail(to: string, token: string, name: string) {
     const email = new SibApiV3Sdk.SendSmtpEmail();
+
+    const verificationUrl = `https://style-hub-social-media-be-d369dfc7ce40.herokuapp.com/auth/verify-email?token=${token}`;
     
-    email.to = [{ email: to, name }];
-    
-    // 👇 FIX: Access properties directly from the injected config
-    email.sender = { 
-      email: this.config.email.EMAIL_FROM, 
-      name: this.config.email.EMAIL_NAME 
-    };
-    const userName=name.split('@')[0];
+    // Format the user's name
+    const userName = name.split('@')[0];
     const formattedUserName = userName.charAt(0).toUpperCase() + userName.slice(1);
-    
-    email.subject = `🎉 Welcome to ${this.config.email.EMAIL_NAME}!`;
+
+    email.to = [{ email: to, name }];
+    email.sender = {
+      email: this.config.email.EMAIL_FROM,
+      name: this.config.email.EMAIL_NAME,
+    };
+
+    email.subject = `🎉 Welcome to ${this.config.email.EMAIL_NAME}! Please verify your email`;
 
     email.htmlContent = `
       <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 40px 0;">
@@ -58,33 +59,39 @@ export class EmailService {
           </p>
 
           <p style="font-size: 16px; color: #555555; line-height: 1.6;">
-            Your journey starts now — connect, share, and explore amazing content.
+            Before you can connect, share, and explore amazing content, we just need to verify your email address.
           </p>
 
           <div style="margin: 30px 0; text-align: center;">
-            <a href="#" 
+            <a href="${verificationUrl}" 
               style="background-color: #4f46e5; color: white; padding: 14px 28px; 
                       text-decoration: none; border-radius: 8px; 
                       font-weight: bold; display: inline-block;">
-              Explore Now 🚀
+              Verify Email 🚀
             </a>
           </div>
+
+          <p style="font-size: 14px; color: #777777; text-align: center;">
+            ⏳ This link expires in <strong>15 minutes</strong>.
+          </p>
 
           <hr style="border: none; border-top: 1px solid #eeeeee; margin: 30px 0;" />
 
           <p style="font-size: 13px; color: #999999; text-align: center;">
-            If you did not create this account, please ignore this email.
+            If you did not create this account, please safely ignore this email.
           </p>
 
         </div>
       </div>
     `;
+
     try {
       await this.apiInstance.sendTransacEmail(email);
-      //console.log(`Welcome email sent to ${to}`);
+      console.log(`Welcome/Verification email sent to ${to}`);
     } catch (err) {
-      console.log('Error sending welcome email.');
-      throw new InternalServerErrorException('Failed to send welcome email');
+      console.log('Error sending verification email.', err);
+      // It's a good practice to throw the error so the caller knows the email failed
+      throw new InternalServerErrorException('Failed to send verification email'); 
     }
   }
 
@@ -94,7 +101,6 @@ export class EmailService {
 
     email.to = [{ email: to }];
     
-    // 👇 FIX: Consistent usage
     email.sender = { 
       email: this.config.email.EMAIL_FROM, 
       name: this.config.email.EMAIL_NAME 
@@ -152,37 +158,7 @@ export class EmailService {
       await this.apiInstance.sendTransacEmail(email);
       console.log(`Password reset email sent to ${to}`);
     } catch (err) {
-      console.log('Error sending password reset email.');
-      throw new InternalServerErrorException('Failed to send password reset email');
+      console.log('Error sending password reset email.', err);
     }
   }
-  async sendVerificationEmail(to: string, token: string) {
-  const email = new SibApiV3Sdk.SendSmtpEmail();
-
-  const verificationUrl = `https://style-hub-social-media-be-d369dfc7ce40.herokuapp.com/auth/verify-email?token=${token}`;
-
-  email.to = [{ email: to }];
-  email.sender = {
-    email: this.config.email.EMAIL_FROM,
-    name: this.config.email.EMAIL_NAME,
-  };
-
-  email.subject = 'Verify your email';
-
-  email.htmlContent = `
-    <h2>Email Verification</h2>
-    <p>Click the button below to verify your account:</p>
-    <a href="${verificationUrl}"
-       style="padding:10px 20px;background:#4f46e5;color:white;text-decoration:none;border-radius:6px;">
-       Verify Email
-    </a>
-    <p>This link expires in 15 minutes.</p>
-  `;
-  try{
-    await this.apiInstance.sendTransacEmail(email);
-    console.log(`Verification email sent to ${to}`);
-  } catch (err) {
-    console.log('Error sending verification email.');
-  }
-}
 }

@@ -1,6 +1,11 @@
+import { Role } from '@/modules/common/enums/role.enum';
 import { IsEnum, IsNumber, IsString } from 'class-validator';
 
 export class BrandProfileDto {
+  @IsString()
+  id: string;
+  @IsEnum(Role)
+  type: Role.BRAND;
   @IsString()
   brandName: string;
   @IsString()
@@ -10,9 +15,13 @@ export class BrandProfileDto {
   @IsString()
   bio?: string;
   @IsString()
+  profileImageUrl?: string;
+  @IsString()
   phoneNumber?: string;
   @IsNumber()
   numberOfFollowers?: number;
   @IsNumber()
   numberOfPosts?: number;
+  @IsNumber()
+  score?: number; // Optional score field for search results
 }

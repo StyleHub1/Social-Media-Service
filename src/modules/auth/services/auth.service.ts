@@ -60,6 +60,7 @@ export class AuthService {
     await this.emailService.sendVerificationEmail(
       entity.email,
       verificationToken,
+      entity.email
     );
 
     return {
