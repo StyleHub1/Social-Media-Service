@@ -1,13 +1,15 @@
-import { IsEnum, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString } from "class-validator";
 
-export class BrandRegisterDto {
+export class BrandCompleteProfileDto {
   @IsString()
   brandName: string;
   @IsString()
   username: string;
   @IsString()
+  @IsOptional()
   websiteUrl?: string;
   @IsString()
+  @IsOptional()
   bio?: string;
   @IsString()
   phoneNumber?: string;

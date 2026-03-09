@@ -48,11 +48,11 @@ export class BaseUsersService {
     await this.baseUsersRepository.update(id, { password: newPassword });
   }
 
-  async deactivateUser(id: string): Promise<void> {
+  async deactivateBaseUser(id: string): Promise<void> {
     await this.updateBaseUser(id, { isActive: false });
   }
 
-  async activateUser(id: string): Promise<void> {
+  async activateBaseUser(id: string): Promise<void> {
     await this.updateBaseUser(id, { isActive: true });
   }
 
@@ -69,7 +69,7 @@ export class BaseUsersService {
     await this.baseUsersRepository.incrementField(id, 'postsCount', value);
   }
 
-  async deleteUser(id: string): Promise<void> {
+  async deleteBaseUser(id: string): Promise<void> {
     await this.baseUsersRepository.delete(id);
   }
 }

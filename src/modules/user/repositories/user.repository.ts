@@ -35,4 +35,32 @@ export class UserRepository {
     async updateProfile(user: UserProfile): Promise<UserProfile> {
         return await this.userRepository.save(user);
     }
+    async updateProfileImage(id: string, imageUrl: string): Promise<UserProfile|null> {
+        const user = await this.findByBaseUserId(id);
+        if (!user) return null;
+        user.profileImageUrl = imageUrl;
+        return await this.userRepository.save(user);
+    }
+    async searchByUsernameOrNameRaw(query: string) {
+        return await this.userRepository
+            .createQueryBuilder('user')
+            .select([
+                'user.baseUserId',
+                'user.username',
+                'user.firstName',
+                'user.lastName',
+                'user.profileImageUrl',
+            ])
+            .addSelect(`
+                GREATEST(
+                    similarity(user.username, :plainQuery),
+                    similarity(user.firstName, :plainQuery),
+                    similarity(user.lastName, :plainQuery)
+                )`, 'score')
+            .where('user.username ILIKE :q OR user.firstName ILIKE :q OR user.lastName ILIKE :q', { q: `%${query}%` })
+            .setParameter('plainQuery', query)
+            .orderBy('score', 'DESC')
+            .limit(20)
+            .getRawAndEntities();
+        }
 }
