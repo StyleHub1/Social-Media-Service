@@ -11,6 +11,7 @@ import { UserProfile } from '../../user/entities/user-profile.entity';
 import { BrandProfile } from '../../brand/entities/brand-profile.entity';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { ResetToken } from '../entities/reset-token.entity';
+import { Post } from '../../posts/entities/post.entity';
 
 export enum Role {
   USER = 'USER',
@@ -64,6 +65,9 @@ export class BaseUser {
 
   @OneToMany(() => ResetToken, (token) => token.baseUser)
   resetTokens: ResetToken[];
+
+  @OneToMany(() => Post, (post) => post.author)
+  posts: Post[];
 
   @CreateDateColumn()
   createdAt: Date;

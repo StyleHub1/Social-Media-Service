@@ -19,6 +19,8 @@ import { RolesGuard } from './modules/common/guards/roles.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { SearchModule } from './modules/search/search.module';
+import { PostsModule } from './modules/posts/posts.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync(
@@ -49,7 +51,8 @@ import { SearchModule } from './modules/search/search.module';
     AuthModule,
     CloudinaryModule,
     SearchModule,
-
+    PostsModule,
+    EventEmitterModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService,

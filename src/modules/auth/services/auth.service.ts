@@ -197,6 +197,8 @@ export class AuthService {
       role,
       email,
       isProfileComplete: payload.isProfileComplete,
+      iss:"auth-service",
+      aud:"ecommerce-service",
     };
 
     // 3️⃣ Generate new tokens
@@ -243,6 +245,8 @@ export class AuthService {
       sub: entity.id,
       role: entity.role,
       email: entity.email,
+      iss:"auth-service",
+      aud:"ecommerce-service",
       isProfileComplete: entity.isProfileComplete,
     };
     try {

@@ -41,3 +41,17 @@ export const brandLoginDto = {
     password: testBrandAccount.password,
     role: Role.BRAND,
 }
+
+export const testPost = {
+  content: 'This is a test post',
+};
+
+export const testPostVisibilityFollowers = {
+  content: 'Followers only post',
+  visibility: 'FOLLOWERS',
+};
+
+export const testPostPrivate = {
+  content: 'Private post',
+  visibility: 'PRIVATE',
+};
