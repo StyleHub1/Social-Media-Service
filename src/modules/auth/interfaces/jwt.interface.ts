@@ -5,6 +5,8 @@ export interface JwtPayload {
   role: Role;
   email: string;
   isProfileComplete: boolean;
+  iss: string; // Issuer
+  aud: string; // Audience
 }
 
 export interface JwtServiceInterface {
