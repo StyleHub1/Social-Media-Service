@@ -26,7 +26,7 @@ import { UserCompleteProfileDto } from './dto/user-complete-profile.dto';
 import { UserProfileUpdateDto } from './dto/user-profile-update.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
-import { UUID } from 'crypto';
+import { Headers } from '@nestjs/common';
 
 @Controller('user')
 export class UserController {
@@ -42,8 +42,11 @@ export class UserController {
   async completeUserProfile(
     @CurrentUser() user: JwtPayload,
     @Body() body: UserCompleteProfileDto,
+    @Headers('authorization') authorization: string,
   ) {
-    return await this.userService.completeProfile(user.sub, body);
+    const accessToken = authorization?.replace('Bearer ', '');
+
+    return await this.userService.completeProfile(user.sub, body, accessToken);
   }
   @Patch('/profile')
   @Roles(Role.USER)

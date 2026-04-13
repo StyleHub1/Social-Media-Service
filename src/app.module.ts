@@ -12,6 +12,7 @@ import { UserModule } from './modules/user/user.module';
 import { BrandModule } from './modules/brand/brand.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { authConfig } from './config/auth.config';
+import { eCommerceConfig } from './config/e_commerce.config';
 import { PasswordService } from './modules/auth/services/password.service';
 import { ATGuard } from './modules/auth/guards/AT.guard';
 import { RTGuard } from './modules/auth/guards/RT.guard';
@@ -39,7 +40,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     ),
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig,typeOrmConfig,authConfig],
+      load: [appConfig,typeOrmConfig,authConfig,eCommerceConfig],
       validationSchema: appConfigSchema,
       validationOptions: {
             whitelist: true,

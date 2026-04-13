@@ -3,7 +3,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { JwtPayload, JwtServiceInterface } from '../interfaces/jwt.interface';
 import { AuthConfig } from '@/config/auth.config';
-import { TypedConfigService } from '@/config/typed-config.service';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 
