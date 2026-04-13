@@ -10,7 +10,6 @@ import {
   ParseFilePipe,
   Patch,
   Post,
-  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -23,6 +22,7 @@ import { BrandProfileDto } from './dto/brand-profile.dto';
 import { BrandCompleteProfileDto } from './dto/brand-complete-profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { BrandProfileUpdateDto } from './dto/brand-profile-update.dto';
+import { Headers } from '@nestjs/common';
 
 @Controller('brand')
 export class BrandController {
@@ -53,6 +53,7 @@ export class BrandController {
     )
     async uploadProfileImage(
       @CurrentUser() user: JwtPayload,
+      @Headers('authorization') authorization: string,
       @UploadedFile(
         new ParseFilePipe({
           validators: [
@@ -67,7 +68,8 @@ export class BrandController {
       )
       file: Express.Multer.File,
     ) {
-      await this.brandService.updateProfileImage(user.sub, file);
+      const accessToken = authorization?.replace('Bearer ', '');
+      await this.brandService.updateProfileImage(user.sub, file, accessToken);
       return {
         message: 'Image uploaded successfully',
       };
