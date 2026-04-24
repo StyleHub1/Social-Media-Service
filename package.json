@@ -22,7 +22,8 @@
     "migration:generate": "npm run build && npm run typeorm migration:generate -- -d typeorm.config.ts ",
     "migration:run": "npm run build && npm run typeorm migration:run -- -d typeorm.config.ts ",
     "migration:revert": "npm run typeorm migration:revert",
-    "migration:run:prod": "npm run typeorm migration:run -- -d typeorm.config.ts"
+    "migration:run:prod": "npm run typeorm migration:run -- -d typeorm.config.ts",
+    "sync-postman": "ts-node push-to-postman.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -31,11 +32,15 @@
     "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "^2.1.0",
+    "@nestjs/microservices": "^11.1.19",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.15",
+    "@nestjs/swagger": "^11.3.0",
     "@nestjs/typeorm": "^11.0.0",
     "@sendinblue/client": "^3.3.1",
     "@testcontainers/postgresql": "^11.11.0",
+    "@types/amqplib": "^0.10.8",
+    "amqplib": "^1.0.3",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
@@ -48,6 +53,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "streamifier": "^0.1.1",
+    "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.28"
   },
   "devDependencies": {

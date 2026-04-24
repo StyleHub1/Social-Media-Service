@@ -14,6 +14,10 @@ import { BrandProfileUpdateDto } from '../dto/brand-profile-update.dto';
 import { ECommerceConfig } from '@/config/e_commerce.config';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { BrandProfileCompletedEvent } from '../events/brand-profile-completed.event';
+import { BrandProfileUpdatedEvent } from '../events/brand-profile-updated.event';
+import { BrandProfileDeletedEvent } from '../events/brand-profile-deleted.event';
 
 @Injectable()
 export class BrandService {
@@ -25,8 +29,10 @@ export class BrandService {
     private readonly BaseUserService: BaseUsersService,
     private readonly CloudinaryService: CloudinaryService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
-    this.eCommerceServiceConfig = this.configService.get<ECommerceConfig>('ecommerce')!;
+    this.eCommerceServiceConfig =
+      this.configService.get<ECommerceConfig>('ecommerce')!;
   }
   public async completeProfile(
     baseUserId: string,
@@ -35,6 +41,16 @@ export class BrandService {
     brandData = { ...brandData, baseUserId };
     try {
       const brand = await this.brandRepository.createBrand(brandData);
+      this.eventEmitter.emit(
+        'brand.profile.completed',
+        new BrandProfileCompletedEvent(
+          brand.baseUserId,
+          brand.brandName ?? '',
+          brand.username,
+          brand.bio ?? '',
+          brand.websiteUrl ?? ''
+        ),
+      );
       // Update the base user to indicate their profile is complete
       await this.BaseUserService.updateBaseUser(baseUserId, {
         isProfileComplete: true,
@@ -63,6 +79,7 @@ export class BrandService {
   }
   public async getProfile(brandId: string): Promise<BrandProfileDto> {
     const brand = await this.brandRepository.findByBaseUserId(brandId);
+    const baseUser = await this.BaseUserService.findById(brandId);
     if (!brand) {
       throw new NotFoundException('Brand not found');
     }
@@ -74,8 +91,8 @@ export class BrandService {
       bio: brand.bio,
       profileImageUrl: brand.profileImageUrl,
       websiteUrl: brand.websiteUrl,
-      numberOfFollowers: 0, // Placeholder, should be calculated based on followers table
-      numberOfPosts: 0, // Placeholder, should be calculated based on posts table
+      numberOfFollowers: baseUser.followersCount,
+      numberOfPosts: baseUser.postsCount,
     };
     return profile;
   }
@@ -97,10 +114,25 @@ export class BrandService {
     }
     const profile = await this.getProfile(updatedBrand.baseUserId);
 
+    this.eventEmitter.emit(
+      'brand.profile.updated',
+      new BrandProfileUpdatedEvent(
+        updatedBrand.baseUserId,
+        updatedBrand.brandName,
+        updatedBrand.username,
+        updatedBrand.bio,
+        updatedBrand.websiteUrl,
+        updatedBrand.profileImageUrl
+      ),
+    );
+
     try {
       await this.sendBrandDataToCommerceService(profile, accessToken);
     } catch (error) {
-      this.logger.error('Failed to sync brand data with e-commerce service', error instanceof Error ? error.stack : error);
+      this.logger.error(
+        'Failed to sync brand data with e-commerce service',
+        error instanceof Error ? error.stack : error,
+      );
     }
 
     return profile;
@@ -120,6 +152,10 @@ export class BrandService {
     }
     await this.brandRepository.deleteBrand(brand.id);
     await this.BaseUserService.deleteBaseUser(brand.baseUserId);
+    this.eventEmitter.emit(
+      'brand.profile.deleted',
+      new BrandProfileDeletedEvent(brand.id, brand.username)
+    );
   }
 
   public async searchBrands(query: string): Promise<BrandSearchResponseDto[]> {
@@ -155,9 +191,23 @@ export class BrandService {
     }
     Object.assign(brand, updates);
     const updatedBrand = await this.brandRepository.updateProfile(brand);
+    this.eventEmitter.emit(
+      'brand.profile.updated',
+      new BrandProfileUpdatedEvent(
+        updatedBrand.baseUserId,
+        updatedBrand.brandName,
+        updatedBrand.username,
+        updatedBrand.bio,
+        updatedBrand.websiteUrl,
+        updatedBrand.profileImageUrl
+      ),
+    );
     return this.getProfile(updatedBrand.baseUserId);
   }
-  public async sendBrandDataToCommerceService(brand: BrandProfileDto, accessToken: string) {
+  public async sendBrandDataToCommerceService(
+    brand: BrandProfileDto,
+    accessToken: string,
+  ) {
     const url = this.eCommerceServiceConfig.serviceUrl;
     const formData = new FormData();
     formData.append('username', brand.username ?? '');

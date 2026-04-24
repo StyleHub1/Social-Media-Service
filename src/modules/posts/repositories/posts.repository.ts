@@ -26,12 +26,15 @@ export class PostsRepository {
       'post.id',
       'post.content',
       'post.images',
+      'post.reactionsCount',
+      'post.commentsCount',
       'post.videos',
       'post.visibility',
       'post.authorId',
       'post.createdAt',
     ])
       .where('post.deletedAt IS NULL')
+      .andWhere('post.visibility = :visibility', { visibility: 'PUBLIC' })
       .orderBy('post.createdAt', 'DESC')
       .take(limit)
       .skip(offset);
@@ -65,6 +68,8 @@ export class PostsRepository {
       'post.visibility',
       'post.authorId',
       'post.createdAt',
+      'post.reactionsCount',
+      'post.commentsCount',
     ])
       .where('post.authorId = :authorId', { authorId })
       .andWhere('post.deletedAt IS NULL')

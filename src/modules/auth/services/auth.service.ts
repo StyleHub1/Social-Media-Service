@@ -5,35 +5,32 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Role } from 'src/modules/common/enums/role.enum';
-import { UserService } from 'src/modules/user/services/user.service';
 import { PasswordService } from './password.service';
 import { RegistrationDto } from '../dto/registration.dto';
 import { LoginDto } from '../dto/login.dto';
 import { JwtService } from './jwt.service';
 import { JwtPayload } from '../interfaces/jwt.interface';
 import { AuthResponseDto, UserResponseDto } from '../dto/auth-response.dto';
-import { EmailService } from './email.service';
 import { ResetTokenService } from './reset-token.service';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
-import { VerifyResetCodeDto } from '../dto/verify-reset-code.dto'; // Make sure to create this DTO
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { RefreshTokenService } from './refresh-token.service';
 import { RefreshResponseDto } from '../dto/refresh-response.dto';
 import { BaseUsersService } from './base-user.service';
 import { BaseUser } from '../entities/base-user.entity';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { UserRegisteredEvent } from '../events/user-registered.event';
 
 @Injectable()
 export class AuthService {
-
   constructor(
     private readonly baseUserService: BaseUsersService,
     private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
-    private readonly emailService: EmailService,
     private readonly resetTokenService: ResetTokenService,
     private readonly refreshTokenService: RefreshTokenService,
-  ) {
-  }
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   // ========================= REGISTER =========================
 
@@ -54,40 +51,42 @@ export class AuthService {
       isEmailVerified: false,
     });
 
-    const verificationToken =
-      this.jwtService.generateEmailVerificationToken(entity.email);
-
-    await this.emailService.sendVerificationEmail(
+    const verificationToken = this.jwtService.generateEmailVerificationToken(
       entity.email,
-      verificationToken,
-      entity.email
+    );
+
+    this.eventEmitter.emit(
+      'auth.user.registered',
+      new UserRegisteredEvent(entity.email, verificationToken, entity.email),
     );
 
     return {
-      message: 'Registration successful. Please verify your email. check your inbox for the verification link.',
+      message:
+        'Registration successful. Please verify your email. check your inbox for the verification link.',
     };
   }
 
   // ========================= EMAIL VERIFICATION =========================
   async verifyEmail(token: string): Promise<{ message: string }> {
-  const { email } =
-    this.jwtService.verifyEmailVerificationToken(token);
+    const { email } = this.jwtService.verifyEmailVerificationToken(token);
 
-  const user = await this.baseUserService.findByEmail(email);
+    const user = await this.baseUserService.findByEmail(email);
 
-  if (!user) {
-    throw new BadRequestException('User not found');
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isEmailVerified) {
+      return { message: 'Email already verified' };
+    }
+
+    user.isEmailVerified = true;
+    await this.baseUserService.updateBaseUser(user.id, {
+      isEmailVerified: true,
+    });
+
+    return { message: 'Email verified successfully' };
   }
-
-  if (user.isEmailVerified) {
-    return { message: 'Email already verified' };
-  }
-
-  user.isEmailVerified = true;
-  await this.baseUserService.updateBaseUser(user.id, { isEmailVerified: true });
-
-  return { message: 'Email verified successfully' };
-}
 
   // ========================= LOGIN =========================
 
@@ -97,7 +96,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Email or Password');
     }
     if (!entity.isEmailVerified) {
-      throw new UnauthorizedException('Email not verified. Please verify your email before logging in.');
+      throw new UnauthorizedException(
+        'Email not verified. Please verify your email before logging in.',
+      );
     }
     const passwordValid = await this.passwordService.verifyPassword(
       input.password,
@@ -197,13 +198,14 @@ export class AuthService {
       role,
       email,
       isProfileComplete: payload.isProfileComplete,
-      iss:"auth-service",
-      aud:"ecommerce-service",
+      iss: 'auth-service',
+      aud: 'ecommerce-service',
     };
 
     // 3️⃣ Generate new tokens
     const newAccessToken = this.jwtService.generateAccessToken(userPayload);
-    const newRefreshTokenData = this.jwtService.generateRefreshToken(userPayload);
+    const newRefreshTokenData =
+      this.jwtService.generateRefreshToken(userPayload);
 
     // 4️⃣ Store the new refresh token
     try {
@@ -238,21 +240,17 @@ export class AuthService {
     };
   }
   // ========================= PRIVATE HELPERS =========================
-  private async buildAuthResponse(
-    entity: BaseUser,
-  ): Promise<AuthResponseDto> {
+  private async buildAuthResponse(entity: BaseUser): Promise<AuthResponseDto> {
     const payload: JwtPayload = {
       sub: entity.id,
       role: entity.role,
       email: entity.email,
-      iss:"auth-service",
-      aud:"ecommerce-service",
+      iss: 'auth-service',
+      aud: 'ecommerce-service',
       isProfileComplete: entity.isProfileComplete,
     };
     try {
-      await this.refreshTokenService.revokeAllTokensForEntity(
-        entity.id,
-      );
+      await this.refreshTokenService.revokeAllTokensForEntity(entity.id);
     } catch (error) {
       console.error('Failed to revoke old refresh tokens', error);
     }
@@ -282,9 +280,7 @@ export class AuthService {
     };
   }
 
-  private async ensureEmailNotTaken(
-    email: string,
-  ) {
+  private async ensureEmailNotTaken(email: string) {
     const exists = await this.baseUserService.findByEmail(email);
     if (exists) {
       throw new ConflictException('Email already exists');
