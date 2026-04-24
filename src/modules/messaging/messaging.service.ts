@@ -18,6 +18,7 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private readonly exchange: string;
 
   private isConnecting = false;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private buffer: Array<{
     routingKey: string;
     payload: unknown;
@@ -61,7 +62,9 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
         durable: true,
       });
 
-      this.logger.log(`Connected to RabbitMQ — exchange "${this.exchange}" ready`);
+      this.logger.log(
+        `Connected to RabbitMQ — exchange "${this.exchange}" ready`,
+      );
 
       await this.flushBuffer();
     } catch (error) {
@@ -75,13 +78,17 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async reconnect() {
+  private reconnect() {
     this.channel = null;
     this.connection = null;
-    setTimeout(() => this.connect(), 5000);
+    this.reconnectTimer = setTimeout(() => this.connect(), 5000);
   }
 
   private async disconnect(): Promise<void> {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     try {
       await this.channel?.close();
       await this.connection?.close();
