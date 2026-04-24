@@ -24,24 +24,21 @@ import { RefreshTokenService } from './services/refresh-token.service';
 import { BaseUser } from './entities/base-user.entity';
 import { BaseUsersService } from './services/base-user.service';
 import { BaseUsersRepository } from './repositories/base-user.repository';
-
+import { EmailListenerService } from './services/email-listener.service';
 
 @Module({
   imports: [
     forwardRef(() => UserModule),
     forwardRef(() => BrandModule),
-    TypeOrmModule.forFeature([ResetToken,RefreshToken,BaseUser]),
-    ConfigModule.forFeature(emailConfig
-    ),
+    TypeOrmModule.forFeature([ResetToken, RefreshToken, BaseUser]),
+    ConfigModule.forFeature(emailConfig),
     ConfigModule.forFeature(authConfig),
 
     JwtModule.registerAsync({
       global: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (
-        config: TypedConfigService,
-      ): JwtModuleOptions => {
+      useFactory: (config: TypedConfigService): JwtModuleOptions => {
         const { jwt } = config.get<AuthConfig>('auth')!;
 
         return {
@@ -53,8 +50,28 @@ import { BaseUsersRepository } from './repositories/base-user.repository';
       },
     }),
   ],
-  providers: [AuthService,PasswordService,JwtService,ATGuard,EmailService,ResetTokenService,ResetTokenRepository,AtStrategy,RtStrategy,RefreshTokenService,RefreshTokenRepository,BaseUsersService,BaseUsersRepository],
+  providers: [
+    AuthService,
+    PasswordService,
+    JwtService,
+    ATGuard,
+    EmailService,
+    EmailListenerService,
+    ResetTokenService,
+    ResetTokenRepository,
+    AtStrategy,
+    RtStrategy,
+    RefreshTokenService,
+    RefreshTokenRepository,
+    BaseUsersService,
+    BaseUsersRepository,
+  ],
   controllers: [AuthController],
-  exports:[JwtService,RefreshTokenRepository,BaseUsersService,BaseUsersRepository]
+  exports: [
+    JwtService,
+    RefreshTokenRepository,
+    BaseUsersService,
+    BaseUsersRepository,
+  ],
 })
 export class AuthModule {}

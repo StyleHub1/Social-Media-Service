@@ -50,7 +50,7 @@ export class PostsService {
       visibility: dto.visibility ?? PostVisibility.PUBLIC,
     });
 
-    this.eventEmitter.emit('post.created', new PostCreatedEvent(post, authorId));
+    this.eventEmitter.emit('post.created', new PostCreatedEvent(post, authorId, post.createdAt));
 
     return post;
   }
@@ -83,7 +83,7 @@ export class PostsService {
 
     const updated = await this.postsRepository.update(post);
 
-    this.eventEmitter.emit('post.updated', new PostUpdatedEvent(updated, userId));
+    this.eventEmitter.emit('post.updated', new PostUpdatedEvent(updated, userId, updated.updatedAt));
 
     return updated;
   }

@@ -1,16 +1,17 @@
-import { TypeOrmModuleOptions } from "@nestjs/typeorm/dist/interfaces/typeorm-options.interface";
-import { AppConfig } from "./app.config";
+import { TypeOrmModuleOptions } from '@nestjs/typeorm/dist/interfaces/typeorm-options.interface';
+import { AppConfig } from './app.config';
 import * as Joi from 'joi';
-import { AuthConfig } from "./auth.config";
-import { EmailConfig } from "./email.config";
-import { ECommerceConfig } from "./e_commerce.config";
-export interface ConfigType{
-   app:AppConfig;
-   database:TypeOrmModuleOptions;
-   auth: AuthConfig;
-   email:EmailConfig;
-   ecommerce: ECommerceConfig;
-
+import { AuthConfig } from './auth.config';
+import { EmailConfig } from './email.config';
+import { ECommerceConfig } from './e_commerce.config';
+import { RabbitMQConfig } from './rabbitmq.config';
+export interface ConfigType {
+  app: AppConfig;
+  database: TypeOrmModuleOptions;
+  auth: AuthConfig;
+  email: EmailConfig;
+  ecommerce: ECommerceConfig;
+  rabbitmq: RabbitMQConfig;
 }
 export const appConfigSchema = Joi.object({
   APP_MESSAGE_PREFIX: Joi.string().default('Hello'),
@@ -45,12 +46,17 @@ export const appConfigSchema = Joi.object({
   JWT_TOKEN: Joi.string().required(),
   JWT_EXPIRES_IN: Joi.string().required(),
   BREVO_API_KEY: Joi.string().default('your_brevo_api_key_here'),
-  EMAIL_FROM: Joi.string().email().default("omarsherifelghamry@gmail.com"),
-  EMAIL_NAME: Joi.string().default("StyleHub"),
+  EMAIL_FROM: Joi.string().email().default('omarsherifelghamry@gmail.com'),
+  EMAIL_NAME: Joi.string().default('StyleHub'),
   JWT_REFRESH_TOKEN: Joi.string().required(),
   JWT_REFRESH_EXPIRES_IN: Joi.string().required(),
   REFRESH_TOKEN_HASH_SECRET: Joi.string().required(),
   JWT_EMAIL_VERIFICATION_SECRET: Joi.string().required(),
   JWT_EMAIL_VERIFICATION_EXPIRES_IN: Joi.string().required(),
-  E_COMMERCE_SERVICE_URL: Joi.string().uri().default('https://ecommerce-app-e6303c36e118.herokuapp.com/api/v1')
+  E_COMMERCE_SERVICE_URL: Joi.string()
+    .uri()
+    .default('https://ecommerce-app-e6303c36e118.herokuapp.com/api/v1'),
+  RABBITMQ_URL: Joi.string().required(),
+  RABBITMQ_EXCHANGE: Joi.string().default('stylehub'),
+
 });

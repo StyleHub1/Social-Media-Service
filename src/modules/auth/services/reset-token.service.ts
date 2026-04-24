@@ -1,14 +1,14 @@
 // src/auth/services/password-reset-code.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
-import {ResetTokenRepository } from '../repositories/reset-token.repository';
-import { EmailService } from './email.service'
-import { Role } from '../../common/enums/role.enum';
+import { ResetTokenRepository } from '../repositories/reset-token.repository';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PasswordResetRequestedEvent } from '../events/password-reset-requested.event';
 
 @Injectable()
 export class ResetTokenService {
   constructor(
     private readonly repository: ResetTokenRepository,
-    private readonly emailService: EmailService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -28,7 +28,10 @@ export class ResetTokenService {
       token: token,
       expiresAt,
     });
-    await this.emailService.sendPasswordResetEmail(email, token);
+    this.eventEmitter.emit(
+      'auth.password.reset-requested',
+      new PasswordResetRequestedEvent(email, token),
+    );
   }
   /**
    * Verifies if a token is valid and not expired.

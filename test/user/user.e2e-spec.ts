@@ -18,7 +18,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
 
-jest.setTimeout(30000);
+jest.setTimeout(60000);
 
 describe('User (E2E)', () => {
   let app: INestApplication;

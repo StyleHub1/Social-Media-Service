@@ -10,10 +10,14 @@ import { UserProfileUpdateDto } from '../dto/user-profile-update.dto';
 import { BaseUsersService } from '../../auth/services/base-user.service';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { Role } from '../..//auth/entities/base-user.entity';
-import { UserSearchResponseDto } from '../dto/user-search-response.dto ';
+import { UserSearchResponseDto } from '../dto/user-search-response.dto';
 import { ECommerceConfig } from '@/config/e_commerce.config';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { UserProfileCompletedEvent } from '../events/user-profile-completed.event';
+import { UserProfileUpdatedEvent } from '../events/user-profile-updated.event';
+import { UserProfileDeletedEvent } from '../events/user-profile-deleted.event';
 
 @Injectable()
 export class UserService {
@@ -22,11 +26,13 @@ export class UserService {
 
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly BaseUserService: BaseUsersService,
-    private readonly CloudinaryService: CloudinaryService,
+    private readonly baseUserService: BaseUsersService,
+    private readonly cloudinaryService: CloudinaryService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
-    this.eCommerceServiceConfig = this.configService.get<ECommerceConfig>('ecommerce')!;
+    this.eCommerceServiceConfig =
+      this.configService.get<ECommerceConfig>('ecommerce')!;
   }
   public async completeProfile(
     baseUserId: string,
@@ -39,9 +45,23 @@ export class UserService {
       try {
         await this.sendUserDataToCommerceService(userProfile, accessToken);
       } catch (error) {
-        this.logger.error('Failed to sync user data with e-commerce service', error instanceof Error ? error.stack : error);
+        this.logger.error(
+          'Failed to sync user data with e-commerce service',
+          error instanceof Error ? error.stack : error,
+        );
       }
-      await this.BaseUserService.updateBaseUser(baseUserId, {
+      this.eventEmitter.emit(
+        'user.profile.completed',
+        new UserProfileCompletedEvent(
+          userProfile.baseUserId,
+          userProfile.username,
+          userProfile.firstName ?? '',
+          userProfile.lastName ?? '',
+          userProfile.phoneNumber ?? '',
+          userProfile.gender,
+        ),
+      );
+      await this.baseUserService.updateBaseUser(baseUserId, {
         isProfileComplete: true,
       });
       return userProfile;
@@ -64,7 +84,10 @@ export class UserService {
     return await this.userRepository.findByBaseUserId(baseUserId);
   }
   public async getProfile(userId: string): Promise<UserProfileDto> {
-    const user = await this.userRepository.findByBaseUserId(userId);
+    const [user, baseUser] = await Promise.all([
+      this.userRepository.findByBaseUserId(userId),
+      this.baseUserService.findById(userId),
+    ]);
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -76,9 +99,9 @@ export class UserService {
       lastName: user.lastName,
       gender: user.gender,
       phoneNumber: user.phoneNumber,
-      numberOfFollowers: 0, // Placeholder, should be calculated based on followers table
-      numberOfFollowing: 0, // Placeholder, should be calculated based on followers table
-      numberOfPosts: 0, // Placeholder, should be calculated based on posts table
+      numberOfFollowers: baseUser.followersCount,
+      numberOfFollowing: baseUser.followingCount,
+      numberOfPosts: baseUser.postsCount,
       posts: {}, // Placeholder, should be populated with actual posts data
       bio: user.bio,
       profileImageUrl: user.profileImageUrl,
@@ -101,8 +124,26 @@ export class UserService {
         throw new ConflictException('Username already exists');
       }
     }
-    Object.assign(user, updates);
-    const updatedUser = await this.userRepository.updateProfile(user);
+    const updatedUser = await this.userRepository.updateProfile({
+      ...user,
+      ...updates,
+    });
+    if (!updatedUser) {
+      throw new NotFoundException('User not found after update');
+    }
+    this.eventEmitter.emit(
+      'user.profile.updated',
+      new UserProfileUpdatedEvent(
+        updatedUser.baseUserId,
+        updatedUser.username,
+        updatedUser.firstName,
+        updatedUser.lastName,
+        updatedUser.bio,
+        updatedUser.profileImageUrl,
+        updatedUser.gender,
+        updatedUser.phoneNumber
+      ),
+    );
     return this.getProfile(updatedUser.baseUserId);
   }
   public async deleteAccount(userId: string): Promise<void> {
@@ -110,14 +151,18 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    await this.BaseUserService.deleteBaseUser(user.baseUserId);
+    await this.baseUserService.deleteBaseUser(user.baseUserId);
     await this.userRepository.deleteUser(user.id);
+    this.eventEmitter.emit(
+      'user.profile.deleted',
+      new UserProfileDeletedEvent(user.baseUserId, user.username),
+    );
   }
   public async updateProfileImage(
     userId: string,
     image: Express.Multer.File,
   ): Promise<UserProfileDto> {
-    const uploadResult = await this.CloudinaryService.uploadFile(
+    const uploadResult = await this.cloudinaryService.uploadFile(
       image,
       'users/profile',
     );
@@ -129,6 +174,19 @@ export class UserService {
     if (!updatedUser) {
       throw new NotFoundException('User not found');
     }
+    this.eventEmitter.emit(
+      'user.profile.updated',
+      new UserProfileUpdatedEvent(
+        updatedUser.baseUserId,
+        updatedUser.username,
+        updatedUser.firstName,
+        updatedUser.lastName,
+        updatedUser.bio,
+        updatedUser.profileImageUrl,
+        updatedUser.gender,
+        updatedUser.phoneNumber
+      ),
+    );
     return this.getProfile(updatedUser.baseUserId);
   }
   public async getProfileImage(userId: string): Promise<string> {

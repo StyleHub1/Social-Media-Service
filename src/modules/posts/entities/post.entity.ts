@@ -36,10 +36,22 @@ export class Post {
   @Column()
   authorId: string;
 
-  @Column({ type: 'enum', enum: PostVisibility, default: PostVisibility.PUBLIC })
+  @Column({
+    type: 'enum',
+    enum: PostVisibility,
+    default: PostVisibility.PUBLIC,
+  })
   visibility: PostVisibility;
 
-  @ManyToOne(() => BaseUser, (baseUser) => baseUser.posts, { onDelete: 'CASCADE' })
+  @Column({ type: 'int', default: 0 })
+  reactionsCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  commentsCount: number;
+
+  @ManyToOne(() => BaseUser, (baseUser) => baseUser.posts, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'authorId' })
   author: BaseUser;
 

@@ -9,12 +9,14 @@ import { AuthModule } from '../auth/auth.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
-  imports:[TypeOrmModule.forFeature([UserProfile]),
-  forwardRef(() => AuthModule),
-  forwardRef(() => CloudinaryModule)],
-  
+  imports: [
+    TypeOrmModule.forFeature([UserProfile]),
+    forwardRef(() => AuthModule),
+    forwardRef(() => CloudinaryModule),
+  ],
+
   controllers: [UserController],
-  providers: [UserService,UserRepository],
-  exports: [UserService,UserRepository]
+  providers: [UserService, UserRepository],
+  exports: [UserService, UserRepository],
 })
 export class UserModule {}
