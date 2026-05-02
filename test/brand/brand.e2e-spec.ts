@@ -18,6 +18,14 @@ import {
 } from '../utils/test-data';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
+import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 
 jest.setTimeout(30000);
 
@@ -58,6 +66,12 @@ describe('Brand Profile (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
+      .overrideProvider(EmailService)
+      .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -86,10 +100,7 @@ describe('Brand Profile (E2E)', () => {
 
   describe('Brand Profile Flow', () => {
     beforeEach(async () => {
-      const hashedPassword = await bcrypt.hash(
-        testBrandAccount.password,
-        10,
-      );
+      const hashedPassword = await bcrypt.hash(testBrandAccount.password, 10);
 
       await dataSource.getRepository('base_users').save({
         ...testBrandAccount,
@@ -122,16 +133,11 @@ describe('Brand Profile (E2E)', () => {
         .expect(201);
 
       expect(response.body).toHaveProperty('id');
-      expect(response.body.brandName).toBe(
-        testBrandProfile.brandName,
-      );
+      expect(response.body.brandName).toBe(testBrandProfile.brandName);
     });
 
     it('should return 403 if role is not BRAND', async () => {
-      const userHashed = await bcrypt.hash(
-        testAccount.password,
-        10,
-      );
+      const userHashed = await bcrypt.hash(testAccount.password, 10);
 
       await dataSource.getRepository('base_users').save({
         ...testAccount,
@@ -197,9 +203,7 @@ describe('Brand Profile (E2E)', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
 
-      expect(profileRes.body.brandName).toBe(
-        testBrandProfile.brandName,
-      );
+      expect(profileRes.body.brandName).toBe(testBrandProfile.brandName);
     });
 
     it('should return 404 if brand profile does not exist', async () => {
@@ -248,13 +252,15 @@ describe('Brand Profile (E2E)', () => {
     it('should return 409 when updating to an already taken username', async () => {
       // 1. Create a secondary brand user directly in the DB to hold the conflicting username
       const hashedPass = await bcrypt.hash('password123', 10);
-      const secondBrandUser = await dataSource.getRepository('base_users').save({
-        email: 'second_brand@example.com',
-        password: hashedPass,
-        isEmailVerified: true,
-        role: Role.BRAND,
-      });
-      
+      const secondBrandUser = await dataSource
+        .getRepository('base_users')
+        .save({
+          email: 'second_brand@example.com',
+          password: hashedPass,
+          isEmailVerified: true,
+          role: Role.BRAND,
+        });
+
       await dataSource.getRepository('brand_profiles').save({
         baseUserId: secondBrandUser.id,
         username: 'taken_brand_username',

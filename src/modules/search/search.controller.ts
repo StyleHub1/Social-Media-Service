@@ -8,7 +8,7 @@ import { SearchResultDto } from './search-result.dto';
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
-// GET /search?query=omar
+  // GET /search?query=omar
   @Get()
   @Roles(Role.USER, Role.BRAND)
   async search(@Query('query') query: string): Promise<SearchResultDto[]> {

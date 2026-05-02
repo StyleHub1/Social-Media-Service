@@ -5,10 +5,7 @@ import { BrandModule } from '../brand/brand.module';
 import { UserModule } from '../user/user.module';
 
 @Module({
-  imports:[
-    forwardRef(() => BrandModule),
-    forwardRef(() => UserModule)
-  ],
+  imports: [forwardRef(() => BrandModule), forwardRef(() => UserModule)],
   controllers: [SearchController],
   providers: [SearchService],
 })

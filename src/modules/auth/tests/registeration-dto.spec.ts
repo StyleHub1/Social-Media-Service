@@ -28,7 +28,7 @@ describe('RegistrationDto', () => {
     dto.confirmationPassword = password;
 
     const errors = await validate(dto);
-    return errors.find(e => e.property === 'password');
+    return errors.find((e) => e.property === 'password');
   };
 
   it('should validate a complete USER registration', async () => {
@@ -61,31 +61,33 @@ describe('RegistrationDto', () => {
     it('should fail when password has no uppercase letter', async () => {
       const passwordErrors = await getPasswordErrors('password123!');
       expect(passwordErrors).toBeDefined();
-      expect(Object.values(passwordErrors?.constraints ?? {}))
-        .toContain('Password must contain at least one uppercase letter');
+      expect(Object.values(passwordErrors?.constraints ?? {})).toContain(
+        'Password must contain at least one uppercase letter',
+      );
     });
 
     it('should fail when password has no lowercase letter', async () => {
       const passwordErrors = await getPasswordErrors('PASSWORD123!');
       expect(passwordErrors).toBeDefined();
-      expect(Object.values(passwordErrors?.constraints ?? {}))
-        .toContain('Password must contain at least one lowercase letter');
+      expect(Object.values(passwordErrors?.constraints ?? {})).toContain(
+        'Password must contain at least one lowercase letter',
+      );
     });
 
     it('should fail when password has no number', async () => {
       const passwordErrors = await getPasswordErrors('Password!');
       expect(passwordErrors).toBeDefined();
-      expect(Object.values(passwordErrors?.constraints ?? {}))
-        .toContain('Password must contain at least one number');
+      expect(Object.values(passwordErrors?.constraints ?? {})).toContain(
+        'Password must contain at least one number',
+      );
     });
 
     it('should fail when password has no special character', async () => {
       const passwordErrors = await getPasswordErrors('Password123');
       expect(passwordErrors).toBeDefined();
-      expect(Object.values(passwordErrors?.constraints ?? {}))
-        .toContain(
-          'Password must contain at least one special character (@$!%*?&)'
-        );
+      expect(Object.values(passwordErrors?.constraints ?? {})).toContain(
+        'Password must contain at least one special character (@$!%*?&)',
+      );
     });
   });
 });

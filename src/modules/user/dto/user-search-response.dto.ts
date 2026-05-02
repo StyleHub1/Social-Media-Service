@@ -1,6 +1,9 @@
 import { Role } from '@/modules/auth/entities/base-user.entity';
 import {
-  IsNotEmpty, IsOptional, IsString, MinLength, MaxLength, IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEnum,
   IsNumber,
 } from 'class-validator';
 export class UserSearchResponseDto {

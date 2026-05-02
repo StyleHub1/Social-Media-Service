@@ -1,4 +1,4 @@
-import { UserResponseDto } from "./auth-response.dto";
+import { UserResponseDto } from './auth-response.dto';
 
 export class RefreshResponseDto {
   accessToken: string;

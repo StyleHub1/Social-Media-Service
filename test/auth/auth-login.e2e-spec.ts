@@ -2,15 +2,24 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import {
+  PostgreSqlContainer,
+  StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { Role } from 'src/modules/common/enums/role.enum';
 import { testAccount, userLoginDto } from '../utils/test-data';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
-import { bool } from 'joi';
-import { isBoolean } from 'class-validator';
+import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 jest.setTimeout(30000);
 describe('Auth Login (E2E)', () => {
   let app: INestApplication;
@@ -50,6 +59,12 @@ describe('Auth Login (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
+      .overrideProvider(EmailService)
+      .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();

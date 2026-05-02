@@ -44,7 +44,7 @@ import { EmailListenerService } from './services/email-listener.service';
         return {
           secret: jwt.secret,
           signOptions: {
-            expiresIn: jwt.expiresIn as StringValue,
+            expiresIn: jwt.expiresIn,
           },
         };
       },

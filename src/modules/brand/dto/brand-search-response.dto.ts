@@ -1,8 +1,5 @@
 import { Role } from '@/modules/auth/entities/base-user.entity';
-import {
-  IsNotEmpty, IsOptional, IsString, MinLength, MaxLength, IsEnum,
-  IsNumber,
-} from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsNumber } from 'class-validator';
 export class BrandSearchResponseDto {
   @IsString()
   id: string;

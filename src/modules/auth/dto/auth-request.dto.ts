@@ -1,10 +1,10 @@
-import { Role } from "@/modules/common/enums/role.enum";
+import { Role } from '@/modules/common/enums/role.enum';
 
 export interface AuthRequestDto {
-    user:{
-      sub: string;
-      role: Role;
-      email: string;
-      username: string;
-    };
+  user: {
+    sub: string;
+    role: Role;
+    email: string;
+    username: string;
+  };
 }

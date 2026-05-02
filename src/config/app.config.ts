@@ -1,10 +1,12 @@
-import { registerAs } from "@nestjs/config";
+import { registerAs } from '@nestjs/config';
 
 export interface AppConfig {
-messagePrefix: string;
+  messagePrefix: string;
 }
 
-export const appConfig =registerAs('app', (): AppConfig => ({
-    messagePrefix: process.env.APP_MESSAGE_PREFIX ??'Hello',
-
-}))
+export const appConfig = registerAs(
+  'app',
+  (): AppConfig => ({
+    messagePrefix: process.env.APP_MESSAGE_PREFIX ?? 'Hello',
+  }),
+);

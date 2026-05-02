@@ -24,23 +24,23 @@ export const testUserProfile = {
   gender: Gender.MALE,
 };
 export const testBrandProfile = {
-    brandName: 'Test Brand',
-    username: 'test_brand_user',
-    websiteUrl: 'https://example.com',
-    bio: 'This is a test brand.',
-    phoneNumber: '0987654321',
-}
+  brandName: 'Test Brand',
+  username: 'test_brand_user',
+  websiteUrl: 'https://example.com',
+  bio: 'This is a test brand.',
+  phoneNumber: '0987654321',
+};
 export const userLoginDto = {
-    email: testAccount.email,
-    password: testAccount.password,
-    role: Role.USER,
-}
+  email: testAccount.email,
+  password: testAccount.password,
+  role: Role.USER,
+};
 
 export const brandLoginDto = {
-    email: testBrandAccount.email,
-    password: testBrandAccount.password,
-    role: Role.BRAND,
-}
+  email: testBrandAccount.email,
+  password: testBrandAccount.password,
+  role: Role.BRAND,
+};
 
 export const testPost = {
   content: 'This is a test post',

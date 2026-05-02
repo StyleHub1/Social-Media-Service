@@ -30,7 +30,7 @@ export class UserProfile {
   @Column({ nullable: true })
   bio: string;
 
-  @Column({ type: 'enum', enum: Gender})
+  @Column({ type: 'enum', enum: Gender })
   gender: Gender;
 
   @Column({ nullable: true })

@@ -15,8 +15,11 @@ npm run test:watch         # Watch mode
 npm run test:cov           # With coverage
 npm run test:e2e           # End-to-end tests (requires DB)
 
-# Run a single test file
+# Run a single unit test file
 npx jest src/modules/auth/tests/password.service.spec.ts
+
+# Run a single e2e test file
+npx jest --config ./jest-e2e.json --runInBand "test/feed"
 
 # Database migrations
 npm run migration:generate # Build + generate migration from entity diff
@@ -110,11 +113,14 @@ src/
     ├── feed/
     │   ├── feed.module.ts
     │   ├── controllers/             # feed.controller.ts
-    │   ├── dto/                     # feed-query, feed-response
+    │   ├── dto/                     # feed-query, feed-response (FeedItemResponseDto, FeedPostDto)
     │   ├── entities/                # FeedItem
-    │   ├── enums/                   # FeedItemType
-    │   ├── repositories/
-    │   └── services/
+    │   ├── enums/                   # FeedItemType (POST | GLOBAL)
+    │   ├── jobs/                    # FeedCleanupJob — daily cron, deletes items older than 30 days
+    │   ├── listeners/               # FeedEventListener — handles post.created, post.deleted, follow.*
+    │   ├── repositories/            # FeedRepository — bulk insert, raw follower/post queries via DataSource
+    │   ├── services/                # FeedService — fan-out, backfill, cleanup, hybrid fallback
+    │   └── tests/                   # Unit tests for FeedService and FeedEventListener
     ├── brand/
     │   ├── brand.controller.ts
     │   ├── dto/
@@ -158,7 +164,7 @@ Each domain module lives under `src/modules/<name>/` and typically contains: `*.
 | `posts` | CRUD for posts with image/video uploads; soft delete; pagination; `reactionsCount` and `commentsCount` counters |
 | `follow` | Follow/unfollow between users; paginated followers/following lists; follow status check; emits `follow.followed` / `follow.unfollowed` events; updates `followersCount` / `followingCount` on `BaseUser` atomically |
 | `interactions` | Reactions (like/unlike) and comments on posts; both operations use DB transactions to keep post counters in sync; soft delete for comments; emits `post.reacted`, `post.unreacted`, `comment.created`, `comment.deleted` events; brands may only interact with their own posts |
-| `feed` | Feed item persistence (`feed_items` table); populated from follow/post events (work in progress) |
+| `feed` | Fan-out-on-write feed. `FeedEventListener` listens to `post.created` (bulk-inserts a `feed_item` per follower + self), `post.deleted` (cleanup), `follow.followed` (backfill last 20 posts), `follow.unfollowed` (cleanup). `GET /feed` returns personal feed or falls back to recent PUBLIC posts (`type: GLOBAL`) for new users. `FeedCleanupJob` purges items older than 30 days daily at 3am. `feed_items` table has `UNIQUE(ownerId, postId)` for idempotent inserts and indexes on `(ownerId, createdAt DESC)` and `(ownerId, authorId)`. |
 | `search` | Cross-entity search across users and brands by name, ranked by score |
 | `cloudinary` | Thin wrapper around Cloudinary SDK; used by user, brand, and posts modules |
 | `messaging` | RabbitMQ publisher via `amqplib`. `MessagingService` connects on startup and asserts a durable topic exchange `stylehub`. `EventBridgeService` listens to internal `@nestjs/event-emitter` events and forwards them with `social.*` routing keys. `UserService` and `BrandService` also call `publish()` directly after profile creation. If RabbitMQ is down the app continues — messages are dropped with a warning log. |
@@ -229,7 +235,18 @@ Controller endpoints (require `Role.USER` or `Role.BRAND`):
 
 ### Feed
 
-`FeedItem` entity (`feed_items` table) links an owner (`BaseUser`) to a `Post` with a `FeedItemType` enum. `FeedService` and `FeedController` are scaffolded but not yet fully implemented — feed population from follow/post events is work in progress.
+`feed_items` table stores one row per `(ownerId, postId)` pair — no post content duplication. Key columns: `ownerId`, `postId`, `authorId` (denormalized for O(1) unfollow cleanup without joining posts), `type` (`POST | GLOBAL`), `createdAt`. Unique constraint on `(ownerId, postId)` makes all inserts idempotent via `ON CONFLICT DO NOTHING`.
+
+**Read path** (`GET /feed`): single index scan on `(ownerId, createdAt DESC)` + one PK join to `posts`. If the result is empty, falls back to querying recent `PUBLIC` posts directly (hybrid fan-out-on-read) and returns them with `type: GLOBAL`.
+
+**Write path**: `FeedEventListener` handles four events asynchronously (`{ async: true }`) — errors are caught and logged, never propagated to the emitting request. Bulk inserts are chunked at 500 rows.
+
+**Backfill cap**: on `follow.followed`, only the 20 most recent posts by the followed user are backfilled. This prevents large inserts when following prolific accounts.
+
+**Retention**: `FeedCleanupJob` runs `@Cron('0 3 * * *')` and deletes `feed_items` older than 30 days. Requires `ScheduleModule.forRoot()` in `AppModule` (already wired).
+
+Controller endpoint (requires `Role.USER` or `Role.BRAND`):
+- `GET /feed` — paginated personal feed with hybrid global fallback
 
 ### Search
 
@@ -286,6 +303,7 @@ Migration files live in `src/database/migrations/`. `typeorm.config.ts` at proje
 | 008 | `008-create-interactions-tables.ts` | Adds `reactionsCount` and `commentsCount` columns to `posts` |
 | 009 | `009-create-comments-table.ts` | Creates `comments` table with soft delete and indexes |
 | 010 | `010-create-likes-table.ts` | Creates `likes` table with unique constraint on `(userId, postId)` |
+| 011 | `011-create-feed-items-table.ts` | Creates `feed_items` table with `authorId`, `UNIQUE(ownerId, postId)`, and indexes for feed reads and unfollow cleanup |
 
 ### Configuration
 

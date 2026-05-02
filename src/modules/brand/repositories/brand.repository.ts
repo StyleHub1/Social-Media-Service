@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BrandProfile } from '../entities/brand-profile.entity';
-import { BrandProfileDto } from '../dto/brand-profile.dto';
 
 @Injectable()
 export class BrandRepository {
@@ -27,7 +26,10 @@ export class BrandRepository {
     return await this.brandRepository.findOne({ where: { baseUserId } });
   }
 
-  async updateBrand(id: string, updates: Partial<BrandProfile>): Promise<BrandProfile | null> {
+  async updateBrand(
+    id: string,
+    updates: Partial<BrandProfile>,
+  ): Promise<BrandProfile | null> {
     await this.brandRepository.update(id, updates);
     return await this.findById(id);
   }
@@ -35,33 +37,40 @@ export class BrandRepository {
   async deleteBrand(id: string): Promise<void> {
     await this.brandRepository.delete(id);
   }
-  async updateProfileImage(id: string, imageUrl: string): Promise<BrandProfile|null> {
+  async updateProfileImage(
+    id: string,
+    imageUrl: string,
+  ): Promise<BrandProfile | null> {
     const brand = await this.findByBaseUserId(id);
     if (!brand) return null;
     brand.profileImageUrl = imageUrl;
     return await this.brandRepository.save(brand);
   }
   async searchByUsernameOrName(query: string) {
-      return await this.brandRepository
-          .createQueryBuilder('brand')
-          .select([
-              'brand.baseUserId',
-              'brand.username',
-              'brand.brandName',
-              'brand.profileImageUrl',
-          ])
-          .addSelect(
-            `GREATEST(
+    return await this.brandRepository
+      .createQueryBuilder('brand')
+      .select([
+        'brand.baseUserId',
+        'brand.username',
+        'brand.brandName',
+        'brand.profileImageUrl',
+      ])
+      .addSelect(
+        `GREATEST(
               similarity(brand.username, :plainQuery),
               similarity(brand.brandName, :plainQuery)
-            )`, 'score')
-          .where('brand.username ILIKE :q OR brand.brandName ILIKE :q', { q: `%${query}%` })
-          .setParameter('plainQuery', query)
-          .orderBy('score', 'DESC')
-          .limit(20)
-          .getRawAndEntities();
+            )`,
+        'score',
+      )
+      .where('brand.username ILIKE :q OR brand.brandName ILIKE :q', {
+        q: `%${query}%`,
+      })
+      .setParameter('plainQuery', query)
+      .orderBy('score', 'DESC')
+      .limit(20)
+      .getRawAndEntities();
   }
   public async updateProfile(brand: BrandProfile): Promise<BrandProfile> {
-      return await this.brandRepository.save(brand);
+    return await this.brandRepository.save(brand);
   }
 }

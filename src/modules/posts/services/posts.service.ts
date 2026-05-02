@@ -27,7 +27,7 @@ export class PostsService {
   async createPost(
     authorId: string,
     dto: CreatePostDto,
-    files: any
+    files: any,
   ): Promise<Post> {
     const hasContent = dto.content && dto.content.trim().length > 0;
     const hasImages = files?.images?.length > 0;
@@ -39,8 +39,14 @@ export class PostsService {
       );
     }
 
-    const uploadedImageUrls = await this.uploadFiles(files?.images, 'Posts/images');
-    const uploadedVideoUrls = await this.uploadFiles(files?.videos, 'Posts/videos');
+    const uploadedImageUrls = await this.uploadFiles(
+      files?.images,
+      'Posts/images',
+    );
+    const uploadedVideoUrls = await this.uploadFiles(
+      files?.videos,
+      'Posts/videos',
+    );
 
     const post = await this.postsRepository.create({
       authorId,
@@ -50,7 +56,10 @@ export class PostsService {
       visibility: dto.visibility ?? PostVisibility.PUBLIC,
     });
 
-    this.eventEmitter.emit('post.created', new PostCreatedEvent(post, authorId, post.createdAt));
+    this.eventEmitter.emit(
+      'post.created',
+      new PostCreatedEvent(post, authorId, post.createdAt),
+    );
 
     return post;
   }
@@ -83,7 +92,10 @@ export class PostsService {
 
     const updated = await this.postsRepository.update(post);
 
-    this.eventEmitter.emit('post.updated', new PostUpdatedEvent(updated, userId, updated.updatedAt));
+    this.eventEmitter.emit(
+      'post.updated',
+      new PostUpdatedEvent(updated, userId, updated.updatedAt),
+    );
 
     return updated;
   }
@@ -97,7 +109,10 @@ export class PostsService {
 
     await this.postsRepository.softDelete(postId);
 
-    this.eventEmitter.emit('post.deleted', new PostDeletedEvent(postId, userId));
+    this.eventEmitter.emit(
+      'post.deleted',
+      new PostDeletedEvent(postId, userId),
+    );
   }
 
   async getPostsByUser(

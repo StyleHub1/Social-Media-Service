@@ -1,8 +1,8 @@
 export interface PaginationResponse<T> {
   items: T[];
-  meta:{
+  meta: {
     total: number;
     limit: number;
     offset: number;
-    };
+  };
 }

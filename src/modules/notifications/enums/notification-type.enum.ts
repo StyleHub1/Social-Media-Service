@@ -1,0 +1,5 @@
+export enum NotificationType {
+  NEW_FOLLOWER = 'NEW_FOLLOWER',
+  POST_LIKED = 'POST_LIKED',
+  POST_COMMENTED = 'POST_COMMENTED',
+}

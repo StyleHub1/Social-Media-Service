@@ -1,11 +1,22 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import {
+  PostgreSqlContainer,
+  StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { testAccount } from '../utils/test-data';
 import { ConfigModule } from '@nestjs/config';
+import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 jest.setTimeout(30000);
 describe('Auth Registration (E2E)', () => {
   let app: INestApplication;
@@ -26,7 +37,7 @@ describe('Auth Registration (E2E)', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
-      synchronize: true, 
+      synchronize: true,
       logging: false,
       entities: ['src/modules/**/entities/*.{ts,js}'],
     });
@@ -43,6 +54,12 @@ describe('Auth Registration (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
+      .overrideProvider(EmailService)
+      .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -71,9 +88,11 @@ describe('Auth Registration (E2E)', () => {
       .post('/auth/register')
       .send(testAccount)
       .expect(201);
-    expect(response.body.message).toContain('Registration successful. Please verify your email. check your inbox for the verification link.');
+    expect(response.body.message).toContain(
+      'Registration successful. Please verify your email. check your inbox for the verification link.',
+    );
   });
-  
+
   it('should not allow registration with existing email', async () => {
     // First registration should succeed
     await request(app.getHttpServer())
@@ -84,7 +103,7 @@ describe('Auth Registration (E2E)', () => {
     // Second registration with same email should fail
     const response = await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ ...testAccount})
+      .send({ ...testAccount })
       .expect(409);
     expect(response.body.message).toContain('Email already exists');
   });
@@ -92,82 +111,82 @@ describe('Auth Registration (E2E)', () => {
     const weakPasswordAccount = {
       ...testAccount,
       password: 'pass',
-      confirmationPassword: 'pass',};
+      confirmationPassword: 'pass',
+    };
     const response = await request(app.getHttpServer())
       .post('/auth/register')
       .send(weakPasswordAccount)
       .expect(400);
-    expect(response.body.message).toContain('Password must contain at least one uppercase letter');
-    expect(response.body.message).toContain('Password must be at least 6 characters long');
+    expect(response.body.message).toContain(
+      'Password must contain at least one uppercase letter',
+    );
+    expect(response.body.message).toContain(
+      'Password must be at least 6 characters long',
+    );
   });
   it('should hash password before saving to database', async () => {
     await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testAccount)
-        .expect(201);
+      .post('/auth/register')
+      .send(testAccount)
+      .expect(201);
 
     const user = await dataSource.getRepository('BaseUser').findOne({
-        where: { email: testAccount.email },
-        select: ['id', 'email', 'password'],
+      where: { email: testAccount.email },
+      select: ['id', 'email', 'password'],
     });
 
     expect(user).toBeDefined();
     expect(user!.password).not.toEqual(testAccount.password);
     expect(user!.password.length).toBeGreaterThan(20); // bcrypt hash length
-   });
+  });
   it('should fail with invalid email format', async () => {
     const response = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ ...testAccount, email: 'invalid-email' })
-        .expect(400);
+      .post('/auth/register')
+      .send({ ...testAccount, email: 'invalid-email' })
+      .expect(400);
 
     expect(response.body.message).toContain('Email must be valid');
-    });
+  });
   it('should fail if password confirmation does not match', async () => {
     const response = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
+      .post('/auth/register')
+      .send({
         ...testAccount,
         confirmationPassword: 'DifferentPassword123!',
-        })
-        .expect(400);
-    expect(response.body.message).toContain('Password confirmation does not match password');
-    });
+      })
+      .expect(400);
+    expect(response.body.message).toContain(
+      'Password confirmation does not match password',
+    );
+  });
 
   it('should fail with invalid role', async () => {
     const response = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({ ...testAccount, role: 'ADMIN' })
-        .expect(400);
-    });
+      .post('/auth/register')
+      .send({ ...testAccount, role: 'ADMIN' })
+      .expect(400);
+  });
 
   it('should handle concurrent duplicate registrations safely', async () => {
     const payload = { ...testAccount };
     const requests = [
-        request(app.getHttpServer())
-        .post('/auth/register')
-        .send(payload),
+      request(app.getHttpServer()).post('/auth/register').send(payload),
 
-        request(app.getHttpServer())
-        .post('/auth/register')
-        .send(payload),
+      request(app.getHttpServer()).post('/auth/register').send(payload),
     ];
     const responses = await Promise.allSettled(requests);
     const fulfilled = responses.filter(
-        (r) => r.status === 'fulfilled'
+      (r) => r.status === 'fulfilled',
     ) as PromiseFulfilledResult<any>[];
-    const successCount = fulfilled.filter(
-        (r) => r.value.status === 201
-    ).length;
+    const successCount = fulfilled.filter((r) => r.value.status === 201).length;
     const conflictCount = fulfilled.filter(
-        (r) => r.value.status === 409
+      (r) => r.value.status === 409,
     ).length;
     expect(successCount).toBe(1);
     expect(conflictCount).toBe(1);
     const users = await dataSource.getRepository('BaseUser').find({
-        where: { email: payload.email },
+      where: { email: payload.email },
     });
     expect(users.length).toBe(1);
-    });
-
+  });
 });

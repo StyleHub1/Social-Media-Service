@@ -45,7 +45,8 @@ export class InteractionsService {
     }
 
     let like!: Like;
-    await this.dataSource.transaction(async (manager) => {// Transaction ensures that like creation and post reaction count increment happen atomically, preventing data inconsistencies in case of errors during either operation. 
+    await this.dataSource.transaction(async (manager) => {
+      // Transaction ensures that like creation and post reaction count increment happen atomically, preventing data inconsistencies in case of errors during either operation.
       like = manager.create(Like, { userId, postId });
       like = await manager.save(like);
       await manager.increment(Post, { id: postId }, 'reactionsCount', 1);

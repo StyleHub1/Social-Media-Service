@@ -1,5 +1,10 @@
 // src/modules/auth/guards/rt.guard.ts
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '../services/jwt.service';
 import { RefreshTokenService } from '../services/refresh-token.service';
 import { Request } from 'express';
@@ -25,7 +30,10 @@ export class RTGuard implements CanActivate {
       const payload = this.jwtService.verifyRefreshToken(token);
 
       // Check if the token exists in DB and is valid
-      const storedToken = await this.refreshTokenService.findValidToken(payload.sub, token);
+      const storedToken = await this.refreshTokenService.findValidToken(
+        payload.sub,
+        token,
+      );
       if (!storedToken) {
         throw new UnauthorizedException('Invalid or revoked refresh token');
       }

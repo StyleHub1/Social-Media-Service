@@ -25,7 +25,7 @@ export class BrandProfile {
 
   @Column({ nullable: true })
   bio: string;
-  
+
   @Column({ nullable: true })
   phoneNumber: string;
 

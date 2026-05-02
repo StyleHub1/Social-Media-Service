@@ -1,9 +1,9 @@
 // src/modules/auth/repositories/refresh-token.repository.ts
-import { Injectable } from "@nestjs/common";
-import { RefreshToken } from "../entities/refresh-token.entity";
-import { Repository } from "typeorm";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Role } from "../../common/enums/role.enum";
+import { Injectable } from '@nestjs/common';
+import { RefreshToken } from '../entities/refresh-token.entity';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Role } from '../../common/enums/role.enum';
 
 @Injectable()
 export class RefreshTokenRepository {
@@ -26,11 +26,13 @@ export class RefreshTokenRepository {
   async revokeToken(tokenHash: string): Promise<void> {
     await this.refreshTokenRepo.update({ tokenHash }, { isRevoked: true });
   }
-  async revokeAllTokensForEntity( id: string) {
-    try{
-      await this.refreshTokenRepo.update({ baseUserId: id }, { isRevoked: true });
-    }
-    catch(error){
+  async revokeAllTokensForEntity(id: string) {
+    try {
+      await this.refreshTokenRepo.update(
+        { baseUserId: id },
+        { isRevoked: true },
+      );
+    } catch (error) {
       console.error(`Error revoking tokens for user with ID ${id}:`, error);
       throw error;
     }
@@ -40,11 +42,10 @@ export class RefreshTokenRepository {
     await this.refreshTokenRepo.delete({ tokenHash });
   }
   // Delete all tokens for a user or brand (e.g., logout all devices)
-  async deleteAllTokensForEntity( id: string) {
-     try{
+  async deleteAllTokensForEntity(id: string) {
+    try {
       await this.refreshTokenRepo.delete({ baseUserId: id });
-    }
-    catch(error){
+    } catch (error) {
       console.error(`Error deleting tokens for user with ID ${id}:`, error);
       throw error;
     }
@@ -55,7 +56,7 @@ export class RefreshTokenRepository {
       .createQueryBuilder()
       .delete()
       .from(RefreshToken)
-      .where("expiresAt < :now", { now: new Date() })
+      .where('expiresAt < :now', { now: new Date() })
       .execute();
   }
 }

@@ -29,10 +29,12 @@ export class EventBridgeService {
     this.logger.debug(`user.profile.completed → userId=${event.userId}`);
     this.messagingService.publish('social.user.profile-completed', {
       userId: event.userId,
+      email: event.email,
       username: event.username,
       firstName: event.firstName,
       lastName: event.lastName,
       phoneNumber: event.phoneNumber,
+      bio: event.bio,
       gender: event.gender,
     });
   }
@@ -42,13 +44,14 @@ export class EventBridgeService {
     this.logger.debug(`user.profile.updated → userId=${event.userId}`);
     this.messagingService.publish('social.user.profile-updated', {
       userId: event.userId,
+      email: event.email,
       username: event.username,
       firstName: event.firstName,
       lastName: event.lastName,
       bio: event.bio,
       profileImageUrl: event.profileImageUrl,
       gender: event.gender,
-      phoneNumber: event.phoneNumber
+      phoneNumber: event.phoneNumber,
     });
   }
 
@@ -57,7 +60,7 @@ export class EventBridgeService {
     this.logger.debug(`user.profile.deleted → userId=${event.userId}`);
     this.messagingService.publish('social.user.profile-deleted', {
       userId: event.userId,
-      username: event.username
+      username: event.username,
     });
   }
 
@@ -66,10 +69,11 @@ export class EventBridgeService {
     this.logger.debug(`brand.profile.completed → brandId=${event.brandId}`);
     this.messagingService.publish('social.brand.profile-completed', {
       brandId: event.brandId,
+      email: event.email,
       brandName: event.brandName,
       username: event.username,
       bio: event.bio,
-      websiteUrl: event.websiteUrl
+      websiteUrl: event.websiteUrl,
     });
   }
 
@@ -78,11 +82,12 @@ export class EventBridgeService {
     this.logger.debug(`brand.profile.updated → brandId=${event.brandId}`);
     this.messagingService.publish('social.brand.profile-updated', {
       brandId: event.brandId,
+      email: event.email,
       brandName: event.brandName,
       username: event.username,
       bio: event.bio,
       websiteUrl: event.websiteUrl,
-      profileImageUrl: event.profileImageUrl
+      profileImageUrl: event.profileImageUrl,
     });
   }
 
@@ -91,7 +96,7 @@ export class EventBridgeService {
     this.logger.debug(`brand.profile.deleted → brandId=${event.brandId}`);
     this.messagingService.publish('social.brand.profile-deleted', {
       brandId: event.brandId,
-      username: event.username
+      username: event.username,
     });
   }
 
@@ -192,6 +197,42 @@ export class EventBridgeService {
       postId: event.postId,
       postAuthorId: event.postAuthorId,
       createdAt: event.createdAt,
+    });
+  }
+
+  @OnEvent('chat.message.sent')
+  onChatMessageSent(event: {
+    messageId: string;
+    conversationId: string;
+    senderId: string;
+    recipientId: string;
+    createdAt: Date;
+  }): void {
+    this.logger.debug(
+      `chat.message.sent → messageId=${event.messageId} senderId=${event.senderId}`,
+    );
+    this.messagingService.publish('social.chat.message-sent', {
+      messageId: event.messageId,
+      conversationId: event.conversationId,
+      senderId: event.senderId,
+      recipientId: event.recipientId,
+      createdAt: event.createdAt,
+    });
+  }
+
+  @OnEvent('chat.message.read')
+  onChatMessageRead(event: {
+    conversationId: string;
+    readBy: string;
+    readAt: Date;
+  }): void {
+    this.logger.debug(
+      `chat.message.read → conversationId=${event.conversationId} readBy=${event.readBy}`,
+    );
+    this.messagingService.publish('social.chat.message-read', {
+      conversationId: event.conversationId,
+      readBy: event.readBy,
+      readAt: event.readAt,
     });
   }
 }

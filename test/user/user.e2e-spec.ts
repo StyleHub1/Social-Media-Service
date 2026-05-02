@@ -17,6 +17,14 @@ import {
 } from '../utils/test-data';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
+import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 
 jest.setTimeout(60000);
 
@@ -59,6 +67,12 @@ describe('User (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
+      .overrideProvider(EmailService)
+      .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -83,7 +97,7 @@ describe('User (E2E)', () => {
     // Clean tables before each test
     await dataSource.query('DELETE FROM "user_profiles"');
     await dataSource.query('DELETE FROM "base_users"');
-    
+
     const hashedUserPassword = await bcrypt.hash(testAccount.password, 10);
     await dataSource.getRepository('base_users').save({
       ...testAccount,
@@ -93,7 +107,7 @@ describe('User (E2E)', () => {
   });
 
   // --- POST /user/complete-profile ---
-  
+
   it('should return 401 if no token provided', async () => {
     await request(app.getHttpServer())
       .post('/user/complete-profile')
@@ -120,9 +134,9 @@ describe('User (E2E)', () => {
   it('should return 403 if role is not USER', async () => {
     const hashedPassword = await bcrypt.hash(testBrandAccount.password, 10);
     await dataSource.getRepository('base_users').save({
-        ...testBrandAccount,
-        password: hashedPassword,
-        isEmailVerified: true,
+      ...testBrandAccount,
+      password: hashedPassword,
+      isEmailVerified: true,
     });
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
@@ -186,7 +200,7 @@ describe('User (E2E)', () => {
       .send(userLoginDto)
       .expect(200);
     const token = loginRes.body.accessToken;
-    
+
     await request(app.getHttpServer())
       .post('/user/complete-profile')
       .set('Authorization', `Bearer ${token}`)
@@ -207,7 +221,7 @@ describe('User (E2E)', () => {
       .send(userLoginDto)
       .expect(200);
     const token = loginRes.body.accessToken;
-    
+
     await request(app.getHttpServer())
       .get('/user/profile')
       .set('Authorization', `Bearer ${token}`)
@@ -254,7 +268,7 @@ describe('User (E2E)', () => {
       isEmailVerified: true,
       role: 'USER',
     });
-    
+
     await dataSource.getRepository('user_profiles').save({
       baseUserId: secondUser.id,
       username: 'taken_username',
@@ -342,5 +356,4 @@ describe('User (E2E)', () => {
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });
-
 });

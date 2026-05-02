@@ -26,7 +26,6 @@ import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('posts')
 @Roles(Role.USER, Role.BRAND)
-
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 

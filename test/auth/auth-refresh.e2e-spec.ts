@@ -1,17 +1,22 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import {
+  PostgreSqlContainer,
+  StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { testAccount } from '../utils/test-data';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/modules/auth/services/email.service';
-
-const mockEmailService = {
-  sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
-  sendWelcomeEmail: jest.fn().mockResolvedValue(true),
-};
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 
 jest.setTimeout(60000);
 
@@ -45,10 +50,16 @@ describe('Auth Refresh Token (E2E)', () => {
       .useValue(dataSource)
       .overrideProvider(EmailService)
       .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
   });
 
@@ -76,7 +87,11 @@ describe('Auth Refresh Token (E2E)', () => {
   it('Login -> Refresh Token should return new tokens', async () => {
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: testAccount.email, password: testAccount.password, role: testAccount.role })
+      .send({
+        email: testAccount.email,
+        password: testAccount.password,
+        role: testAccount.role,
+      })
       .expect(200);
 
     expect(loginRes.body).toHaveProperty('accessToken');

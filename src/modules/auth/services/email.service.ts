@@ -1,6 +1,10 @@
 // src/common/services/email.service.ts
 import { emailConfig } from '../../../config/email.config';
-import { Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import * as SibApiV3Sdk from '@sendinblue/client';
 
@@ -12,14 +16,13 @@ export class EmailService {
     @Inject(emailConfig.KEY)
     private readonly config: ConfigType<typeof emailConfig>,
   ) {
-
     if (!this.config.email.BREVO_API_KEY) {
       throw new Error('BREVO_API_KEY is missing in environment variables');
     }
 
     // 1. Initialize API Instance
     this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-    
+
     // 2. Set API Key safely
     this.apiInstance.setApiKey(
       SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey,
@@ -32,10 +35,11 @@ export class EmailService {
     const email = new SibApiV3Sdk.SendSmtpEmail();
 
     const verificationUrl = `https://style-hub-social-media-be-d369dfc7ce40.herokuapp.com/auth/verify-email?token=${token}`;
-    
+
     // Format the user's name
     const userName = name.split('@')[0];
-    const formattedUserName = userName.charAt(0).toUpperCase() + userName.slice(1);
+    const formattedUserName =
+      userName.charAt(0).toUpperCase() + userName.slice(1);
 
     email.to = [{ email: to, name }];
     email.sender = {
@@ -98,12 +102,12 @@ export class EmailService {
     const email = new SibApiV3Sdk.SendSmtpEmail();
 
     email.to = [{ email: to }];
-    
-    email.sender = { 
-      email: this.config.email.EMAIL_FROM, 
-      name: this.config.email.EMAIL_NAME 
+
+    email.sender = {
+      email: this.config.email.EMAIL_FROM,
+      name: this.config.email.EMAIL_NAME,
     };
-    
+
     email.subject = `🔐 Password Reset Code`;
 
     email.htmlContent = `

@@ -10,6 +10,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { ConfigModule } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 import {
   testAccount,
   testBrandAccount,
@@ -57,6 +65,12 @@ describe('Interactions (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
+      .overrideProvider(EmailService)
+      .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -81,6 +95,10 @@ describe('Interactions (E2E)', () => {
   let brandPostId: string;
 
   beforeEach(async () => {
+    // Drain in-flight async event handlers (e.g. notification listener) before
+    // deleting rows to avoid FK violations on the notifications table.
+    await new Promise<void>((resolve) => setTimeout(resolve, 150));
+
     await dataSource.query('DELETE FROM "likes"');
     await dataSource.query('DELETE FROM "comments"');
     await dataSource.query('DELETE FROM "posts"');

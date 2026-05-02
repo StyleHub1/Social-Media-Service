@@ -21,10 +21,10 @@ export class RolesGuard implements CanActivate {
     if (isPublic) {
       return true;
     }
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(
-      ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requiredRoles) {
       return true;
