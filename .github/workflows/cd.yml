@@ -103,5 +103,37 @@ jobs:
 
       - name: Run database migrations
         run: |
-          npm install -g heroku
-          heroku run "npm run migration:run:prod" --app $APP_NAME --exit-code
+          echo "Creating one-off migration dyno..."
+          RESPONSE=$(curl -s -X POST "https://api.heroku.com/apps/$APP_NAME/dynos" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/vnd.heroku+json; version=3" \
+            -H "Authorization: Bearer $HEROKU_API_KEY" \
+            -d '{"command":"npm run migration:run:prod","attach":false,"type":"run","time_to_live":300}')
+
+          echo "Dyno response: $RESPONSE"
+          DYNO_NAME=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))" 2>/dev/null || echo "")
+
+          if [ -z "$DYNO_NAME" ]; then
+            echo "Failed to create migration dyno"
+            exit 1
+          fi
+
+          echo "Migration dyno started: $DYNO_NAME"
+
+          for i in $(seq 1 60); do
+            sleep 10
+            STATE=$(curl -s "https://api.heroku.com/apps/$APP_NAME/dynos/$DYNO_NAME" \
+              -H "Accept: application/vnd.heroku+json; version=3" \
+              -H "Authorization: Bearer $HEROKU_API_KEY" \
+              | python3 -c "import sys,json; print(json.load(sys.stdin).get('state','unknown'))" 2>/dev/null)
+
+            echo "  attempt $i — dyno state: $STATE"
+
+            case "$STATE" in
+              complete) echo "Migrations completed successfully"; exit 0 ;;
+              crashed|error) echo "Migration dyno failed (state=$STATE)"; exit 1 ;;
+            esac
+          done
+
+          echo "Timed out waiting for migration dyno to finish"
+          exit 1
