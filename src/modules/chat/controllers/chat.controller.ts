@@ -62,7 +62,10 @@ export class ChatController {
     @CurrentUser('sub') callerId: string,
     @Body() body: CreateConversationDto,
   ): Promise<ConversationResponseDto> {
-    return this.chatService.getOrCreateConversation(callerId, body.participantId);
+    return this.chatService.getOrCreateConversation(
+      callerId,
+      body.participantId,
+    );
   }
 
   /** Get message history for a conversation (cursor-paginated). */

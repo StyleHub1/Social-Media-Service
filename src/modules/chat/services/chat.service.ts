@@ -39,7 +39,9 @@ export class ChatService {
     participantId: string,
   ): Promise<ConversationResponseDto> {
     if (callerId === participantId) {
-      throw new BadRequestException('Cannot start a conversation with yourself');
+      throw new BadRequestException(
+        'Cannot start a conversation with yourself',
+      );
     }
     const conv = await this.conversationRepo.findOrCreate(
       callerId,

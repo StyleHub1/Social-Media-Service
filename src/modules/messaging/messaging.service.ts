@@ -83,7 +83,10 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
     this.connection = null;
     this.reconnectTimer = setTimeout(() => {
       void this.connect().catch((err) =>
-        this.logger.error('RabbitMQ reconnect error', err instanceof Error ? err.message : String(err)),
+        this.logger.error(
+          'RabbitMQ reconnect error',
+          err instanceof Error ? err.message : String(err),
+        ),
       );
     }, 5000);
   }

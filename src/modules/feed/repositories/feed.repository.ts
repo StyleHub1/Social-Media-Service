@@ -93,7 +93,9 @@ export class FeedRepository {
     return this.dataSource
       .getRepository(Post)
       .createQueryBuilder('p')
-      .where('p.visibility = :visibility', { visibility: PostVisibility.PUBLIC })
+      .where('p.visibility = :visibility', {
+        visibility: PostVisibility.PUBLIC,
+      })
       .andWhere('p.deletedAt IS NULL')
       .orderBy('p.createdAt', 'DESC')
       .take(limit)

@@ -24,7 +24,9 @@ export class EventBridgeService {
   constructor(private readonly messagingService: MessagingService) {}
 
   @OnEvent('user.profile.completed')
-  async onUserProfileCompleted(event: UserProfileCompletedEvent): Promise<void> {
+  async onUserProfileCompleted(
+    event: UserProfileCompletedEvent,
+  ): Promise<void> {
     this.logger.debug(`user.profile.completed → userId=${event.userId}`);
     try {
       await this.messagingService.publish('social.user.profile-completed', {
@@ -38,7 +40,10 @@ export class EventBridgeService {
         gender: event.gender,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish user.profile.completed userId=${event.userId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish user.profile.completed userId=${event.userId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
@@ -58,7 +63,10 @@ export class EventBridgeService {
         phoneNumber: event.phoneNumber,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish user.profile.updated userId=${event.userId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish user.profile.updated userId=${event.userId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
@@ -71,12 +79,17 @@ export class EventBridgeService {
         username: event.username,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish user.profile.deleted userId=${event.userId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish user.profile.deleted userId=${event.userId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('brand.profile.completed')
-  async onBrandProfileCompleted(event: BrandProfileCompletedEvent): Promise<void> {
+  async onBrandProfileCompleted(
+    event: BrandProfileCompletedEvent,
+  ): Promise<void> {
     this.logger.debug(`brand.profile.completed → brandId=${event.brandId}`);
     try {
       await this.messagingService.publish('social.brand.profile-completed', {
@@ -88,7 +101,10 @@ export class EventBridgeService {
         websiteUrl: event.websiteUrl,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish brand.profile.completed brandId=${event.brandId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish brand.profile.completed brandId=${event.brandId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
@@ -106,7 +122,10 @@ export class EventBridgeService {
         profileImageUrl: event.profileImageUrl,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish brand.profile.updated brandId=${event.brandId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish brand.profile.updated brandId=${event.brandId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
@@ -119,13 +138,18 @@ export class EventBridgeService {
         username: event.username,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish brand.profile.deleted brandId=${event.brandId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish brand.profile.deleted brandId=${event.brandId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('post.created')
   async onPostCreated(event: PostCreatedEvent): Promise<void> {
-    this.logger.debug(`post.created → postId=${event.post.id} authorId=${event.authorId}`);
+    this.logger.debug(
+      `post.created → postId=${event.post.id} authorId=${event.authorId}`,
+    );
     try {
       await this.messagingService.publish('social.post.created', {
         postId: event.post.id,
@@ -134,13 +158,18 @@ export class EventBridgeService {
         createdAt: event.post.createdAt,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish post.created postId=${event.post.id}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish post.created postId=${event.post.id}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('post.updated')
   async onPostUpdated(event: PostUpdatedEvent): Promise<void> {
-    this.logger.debug(`post.updated → postId=${event.post.id} authorId=${event.authorId}`);
+    this.logger.debug(
+      `post.updated → postId=${event.post.id} authorId=${event.authorId}`,
+    );
     try {
       await this.messagingService.publish('social.post.updated', {
         postId: event.post.id,
@@ -148,26 +177,36 @@ export class EventBridgeService {
         updatedAt: event.post.updatedAt,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish post.updated postId=${event.post.id}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish post.updated postId=${event.post.id}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('post.deleted')
   async onPostDeleted(event: PostDeletedEvent): Promise<void> {
-    this.logger.debug(`post.deleted → postId=${event.postId} authorId=${event.authorId}`);
+    this.logger.debug(
+      `post.deleted → postId=${event.postId} authorId=${event.authorId}`,
+    );
     try {
       await this.messagingService.publish('social.post.deleted', {
         postId: event.postId,
         authorId: event.authorId,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish post.deleted postId=${event.postId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish post.deleted postId=${event.postId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('follow.followed')
   async onUserFollowed(event: UserFollowedEvent): Promise<void> {
-    this.logger.debug(`follow.followed → followerId=${event.followerId} followingId=${event.followingId}`);
+    this.logger.debug(
+      `follow.followed → followerId=${event.followerId} followingId=${event.followingId}`,
+    );
     try {
       await this.messagingService.publish('social.follow.followed', {
         followId: event.followId,
@@ -176,26 +215,36 @@ export class EventBridgeService {
         createdAt: event.createdAt,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish follow.followed followerId=${event.followerId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish follow.followed followerId=${event.followerId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('follow.unfollowed')
   async onUserUnfollowed(event: UserUnfollowedEvent): Promise<void> {
-    this.logger.debug(`follow.unfollowed → followerId=${event.followerId} followingId=${event.followingId}`);
+    this.logger.debug(
+      `follow.unfollowed → followerId=${event.followerId} followingId=${event.followingId}`,
+    );
     try {
       await this.messagingService.publish('social.follow.unfollowed', {
         followerId: event.followerId,
         followingId: event.followingId,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish follow.unfollowed followerId=${event.followerId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish follow.unfollowed followerId=${event.followerId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('post.reacted')
   async onPostReacted(event: PostReactedEvent): Promise<void> {
-    this.logger.debug(`post.reacted → userId=${event.userId} postId=${event.postId}`);
+    this.logger.debug(
+      `post.reacted → userId=${event.userId} postId=${event.postId}`,
+    );
     try {
       await this.messagingService.publish('social.interaction.reacted', {
         likeId: event.likeId,
@@ -205,13 +254,18 @@ export class EventBridgeService {
         createdAt: event.createdAt,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish post.reacted postId=${event.postId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish post.reacted postId=${event.postId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('post.unreacted')
   async onPostUnreacted(event: PostUnreactedEvent): Promise<void> {
-    this.logger.debug(`post.unreacted → userId=${event.userId} postId=${event.postId}`);
+    this.logger.debug(
+      `post.unreacted → userId=${event.userId} postId=${event.postId}`,
+    );
     try {
       await this.messagingService.publish('social.interaction.unreacted', {
         userId: event.userId,
@@ -219,13 +273,18 @@ export class EventBridgeService {
         authorId: event.postAuthorId,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish post.unreacted postId=${event.postId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish post.unreacted postId=${event.postId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
   @OnEvent('comment.created')
   async onCommentCreated(event: CommentCreatedEvent): Promise<void> {
-    this.logger.debug(`comment.created → commentId=${event.commentId} authorId=${event.authorId} postId=${event.postId}`);
+    this.logger.debug(
+      `comment.created → commentId=${event.commentId} authorId=${event.authorId} postId=${event.postId}`,
+    );
     try {
       await this.messagingService.publish('social.interaction.commented', {
         commentId: event.commentId,
@@ -235,7 +294,10 @@ export class EventBridgeService {
         createdAt: event.createdAt,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish comment.created commentId=${event.commentId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish comment.created commentId=${event.commentId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
@@ -247,7 +309,9 @@ export class EventBridgeService {
     recipientId: string;
     createdAt: Date;
   }): Promise<void> {
-    this.logger.debug(`chat.message.sent → messageId=${event.messageId} senderId=${event.senderId}`);
+    this.logger.debug(
+      `chat.message.sent → messageId=${event.messageId} senderId=${event.senderId}`,
+    );
     try {
       await this.messagingService.publish('social.chat.message-sent', {
         messageId: event.messageId,
@@ -257,7 +321,10 @@ export class EventBridgeService {
         createdAt: event.createdAt,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish chat.message.sent messageId=${event.messageId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish chat.message.sent messageId=${event.messageId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 
@@ -267,7 +334,9 @@ export class EventBridgeService {
     readBy: string;
     readAt: Date;
   }): Promise<void> {
-    this.logger.debug(`chat.message.read → conversationId=${event.conversationId} readBy=${event.readBy}`);
+    this.logger.debug(
+      `chat.message.read → conversationId=${event.conversationId} readBy=${event.readBy}`,
+    );
     try {
       await this.messagingService.publish('social.chat.message-read', {
         conversationId: event.conversationId,
@@ -275,7 +344,10 @@ export class EventBridgeService {
         readAt: event.readAt,
       });
     } catch (err) {
-      this.logger.error(`Failed to publish chat.message.read conversationId=${event.conversationId}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `Failed to publish chat.message.read conversationId=${event.conversationId}`,
+        err instanceof Error ? err.stack : err,
+      );
     }
   }
 }
