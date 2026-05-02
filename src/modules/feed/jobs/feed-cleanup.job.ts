@@ -10,7 +10,7 @@ export class FeedCleanupJob {
 
   constructor(private readonly feedRepository: FeedRepository) {}
 
-  @Cron('0 3 * * *')
+  @Cron('0 3 * * *', { timeZone: 'UTC' })
   async run(): Promise<void> {
     const before = new Date();
     before.setDate(before.getDate() - RETENTION_DAYS);

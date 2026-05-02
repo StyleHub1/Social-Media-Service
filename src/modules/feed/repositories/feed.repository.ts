@@ -3,7 +3,7 @@ import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FeedItem } from '../entities/feed-item.entity';
 import { FeedItemType } from '../enums/feed-item-type.enum';
-import { Post } from '../../posts/entities/post.entity';
+import { Post, PostVisibility } from '../../posts/entities/post.entity';
 
 export interface BulkFeedItem {
   ownerId: string;
@@ -93,7 +93,7 @@ export class FeedRepository {
     return this.dataSource
       .getRepository(Post)
       .createQueryBuilder('p')
-      .where('p.visibility = :visibility', { visibility: 'PUBLIC' })
+      .where('p.visibility = :visibility', { visibility: PostVisibility.PUBLIC })
       .andWhere('p.deletedAt IS NULL')
       .orderBy('p.createdAt', 'DESC')
       .take(limit)

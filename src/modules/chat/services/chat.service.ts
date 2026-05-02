@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -37,6 +38,9 @@ export class ChatService {
     callerId: string,
     participantId: string,
   ): Promise<ConversationResponseDto> {
+    if (callerId === participantId) {
+      throw new BadRequestException('Cannot start a conversation with yourself');
+    }
     const conv = await this.conversationRepo.findOrCreate(
       callerId,
       participantId,
@@ -108,11 +112,10 @@ export class ChatService {
       query.offset,
     );
 
-    const items = await Promise.all(
-      result.items.map(async (conv) => {
-        const unread = await this.messageRepo.countUnread(conv.id, userId);
-        return ConversationResponseDto.fromEntity(conv, userId, unread);
-      }),
+    const convIds = result.items.map((c) => c.id);
+    const unreadMap = await this.messageRepo.batchCountUnread(convIds, userId);
+    const items = result.items.map((conv) =>
+      ConversationResponseDto.fromEntity(conv, userId, unreadMap[conv.id] ?? 0),
     );
 
     return { items, meta: result.meta };

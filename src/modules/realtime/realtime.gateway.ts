@@ -14,7 +14,12 @@ import { JwtService } from '../auth/services/jwt.service';
 import { ChatService } from '../chat/services/chat.service';
 import { TypingService } from '../chat/services/typing.service';
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [],
+    credentials: true,
+  },
+})
 export class RealtimeGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -45,8 +50,10 @@ export class RealtimeGateway
       this.logger.debug(
         `Client connected: socketId=${socket.id} userId=${userId}`,
       );
-    } catch {
-      // Invalid or expired token — reject silently
+    } catch (err) {
+      this.logger.debug(
+        `WS auth rejected socketId=${socket.id}: ${String(err)}`,
+      );
       socket.disconnect();
     }
   }
@@ -66,7 +73,12 @@ export class RealtimeGateway
                 isTyping: false,
               });
             }
-          });
+          })
+          .catch((err) =>
+            this.logger.warn(
+              `auto-stop typing lookup failed userId=${userId}: ${String(err)}`,
+            ),
+          );
       },
     );
   }
@@ -89,7 +101,12 @@ export class RealtimeGateway
                 isTyping: false,
               });
             }
-          });
+          })
+          .catch((err) =>
+            this.logger.warn(
+              `disconnect typing cleanup failed userId=${userId}: ${String(err)}`,
+            ),
+          );
       }
     }
     // Socket.IO removes the socket from all rooms automatically on disconnect
@@ -111,7 +128,7 @@ export class RealtimeGateway
       );
     } catch (err) {
       this.logger.error(`chat:send failed userId=${userId}: ${String(err)}`);
-      socket.emit('chat:error', { message: String(err) });
+      socket.emit('chat:error', { message: 'Failed to send message' });
     }
   }
 
@@ -121,24 +138,28 @@ export class RealtimeGateway
     @MessageBody() payload: { conversationId: string; isTyping: boolean },
   ): Promise<void> {
     const userId = (socket.data as { userId: string }).userId;
-    const { shouldForward } = this.typingService.handleTyping(
-      userId,
-      payload.conversationId,
-      payload.isTyping,
-    );
-
-    if (!shouldForward) return;
-
-    const recipientId = await this.chatService.getOtherParticipantId(
-      payload.conversationId,
-      userId,
-    );
-    if (recipientId) {
-      this.sendToUser(recipientId, 'chat:typing', {
+    try {
+      const { shouldForward } = this.typingService.handleTyping(
         userId,
-        conversationId: payload.conversationId,
-        isTyping: payload.isTyping,
-      });
+        payload.conversationId,
+        payload.isTyping,
+      );
+
+      if (!shouldForward) return;
+
+      const recipientId = await this.chatService.getOtherParticipantId(
+        payload.conversationId,
+        userId,
+      );
+      if (recipientId) {
+        this.sendToUser(recipientId, 'chat:typing', {
+          userId,
+          conversationId: payload.conversationId,
+          isTyping: payload.isTyping,
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`chat:typing failed userId=${userId}: ${String(err)}`);
     }
   }
 
@@ -169,10 +190,6 @@ export class RealtimeGateway
   private extractToken(socket: Socket): string | null {
     const fromAuth = (socket.handshake.auth as Record<string, unknown>)?.token;
     if (typeof fromAuth === 'string' && fromAuth.length > 0) return fromAuth;
-
-    const fromQuery = socket.handshake.query?.token;
-    if (typeof fromQuery === 'string' && fromQuery.length > 0) return fromQuery;
-
     return null;
   }
 }

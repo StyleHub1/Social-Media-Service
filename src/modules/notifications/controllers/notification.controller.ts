@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Patch, Query } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -9,6 +10,7 @@ import { PaginationResponse } from '../../common/pagination/pagination.response'
 
 @Controller('notifications')
 @Roles(Role.USER, Role.BRAND)
+@Throttle({ default: { ttl: 60000, limit: 30 } })
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 

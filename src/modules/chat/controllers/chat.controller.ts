@@ -7,11 +7,16 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ChatService } from '../services/chat.service';
-import { SendDirectMessageDto, SendMessageDto } from '../dto/send-message.dto';
+import {
+  CreateConversationDto,
+  SendDirectMessageDto,
+  SendMessageDto,
+} from '../dto/send-message.dto';
 import { ConversationQueryDto } from '../dto/conversation-query.dto';
 import { MessageQueryDto } from '../dto/message-query.dto';
 import {
@@ -30,6 +35,7 @@ export class ChatController {
    * Send a message — creates the conversation automatically if it doesn't exist.
    */
   @Post('messages')
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   async sendDirect(
     @CurrentUser('sub') senderId: string,
     @Body() body: SendDirectMessageDto,
@@ -54,9 +60,9 @@ export class ChatController {
   @Post('conversations')
   getOrCreate(
     @CurrentUser('sub') callerId: string,
-    @Body('participantId') participantId: string,
+    @Body() body: CreateConversationDto,
   ): Promise<ConversationResponseDto> {
-    return this.chatService.getOrCreateConversation(callerId, participantId);
+    return this.chatService.getOrCreateConversation(callerId, body.participantId);
   }
 
   /** Get message history for a conversation (cursor-paginated). */
@@ -71,6 +77,7 @@ export class ChatController {
 
   /** Send a message into an existing conversation. */
   @Post('conversations/:id/messages')
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
   sendMessage(
     @CurrentUser('sub') senderId: string,
     @Param('id') conversationId: string,

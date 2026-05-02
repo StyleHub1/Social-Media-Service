@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Notification } from '../entities/notification.entity';
 import { NotificationType } from '../enums/notification-type.enum';
 import { PaginationResponse } from '../../common/pagination/pagination.response';
@@ -17,6 +17,7 @@ export class NotificationRepository {
   constructor(
     @InjectRepository(Notification)
     private readonly repo: Repository<Notification>,
+    private readonly dataSource: DataSource,
   ) {}
 
   create(data: CreateNotificationData): Promise<Notification> {
@@ -43,15 +44,14 @@ export class NotificationRepository {
     id: string,
     recipientId: string,
   ): Promise<Notification | null> {
-    const notification = await this.repo.findOne({
-      where: { id, recipientId },
-    });
-
-    if (!notification) return null;
-
-    notification.isRead = true;
-    notification.readAt = new Date();
-    return this.repo.save(notification);
+    const rows: Notification[] = await this.dataSource.query(
+      `UPDATE "notifications"
+       SET "isRead" = true, "readAt" = now()
+       WHERE id = $1 AND "recipientId" = $2 AND "isRead" = false
+       RETURNING *`,
+      [id, recipientId],
+    );
+    return rows[0] ?? null;
   }
 
   async markAllAsRead(recipientId: string): Promise<void> {

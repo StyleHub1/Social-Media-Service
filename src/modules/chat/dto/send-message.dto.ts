@@ -1,5 +1,11 @@
 import { IsNotEmpty, IsString, IsUUID, MaxLength } from 'class-validator';
 
+/** Used on POST /chat/conversations (get or create by participant) */
+export class CreateConversationDto {
+  @IsUUID()
+  participantId: string;
+}
+
 /** Used on POST /chat/messages (initiates or reuses a conversation) */
 export class SendDirectMessageDto {
   @IsUUID()

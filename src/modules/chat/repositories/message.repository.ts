@@ -125,6 +125,28 @@ export class MessageRepository {
       .getCount();
   }
 
+  async batchCountUnread(
+    conversationIds: string[],
+    recipientId: string,
+  ): Promise<Record<string, number>> {
+    if (conversationIds.length === 0) return {};
+
+    const rows: { conversationId: string; count: string }[] =
+      await this.dataSource.query(
+        `SELECT "conversationId", COUNT(*) AS count
+         FROM "chat_messages"
+         WHERE "conversationId" = ANY($1)
+           AND "senderId" != $2
+           AND "status" != 'SEEN'
+         GROUP BY "conversationId"`,
+        [conversationIds, recipientId],
+      );
+
+    return Object.fromEntries(
+      rows.map((r) => [r.conversationId, parseInt(r.count, 10)]),
+    );
+  }
+
   findById(id: string): Promise<ChatMessage | null> {
     return this.repo.findOne({ where: { id } });
   }
