@@ -9,11 +9,9 @@ import { UserProfileDto } from '../dto/user-profile.dto';
 import { UserProfileUpdateDto } from '../dto/user-profile-update.dto';
 import { BaseUsersService } from '../../auth/services/base-user.service';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
-import { Role } from '../..//auth/entities/base-user.entity';
+import { BaseUser, Role } from '../../auth/entities/base-user.entity';
+import { DataSource } from 'typeorm';
 import { UserSearchResponseDto } from '../dto/user-search-response.dto';
-import { ECommerceConfig } from '@/config/e_commerce.config';
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserProfileCompletedEvent } from '../events/user-profile-completed.event';
 import { UserProfileUpdatedEvent } from '../events/user-profile-updated.event';
@@ -21,43 +19,33 @@ import { UserProfileDeletedEvent } from '../events/user-profile-deleted.event';
 
 @Injectable()
 export class UserService {
-  private readonly eCommerceServiceConfig: ECommerceConfig;
-  private readonly logger = new Logger(UserService.name);
-
   constructor(
     private readonly userRepository: UserRepository,
     private readonly baseUserService: BaseUsersService,
     private readonly cloudinaryService: CloudinaryService,
-    private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
-  ) {
-    this.eCommerceServiceConfig =
-      this.configService.get<ECommerceConfig>('ecommerce')!;
-  }
+    private readonly dataSource: DataSource,
+  ) {}
   public async completeProfile(
     baseUserId: string,
     userData: Partial<UserProfile>,
-    accessToken: string,
   ): Promise<UserProfile> {
     userData = { ...userData, baseUserId: baseUserId };
     try {
       const userProfile = await this.userRepository.createUser(userData);
-      try {
-        await this.sendUserDataToCommerceService(userProfile, accessToken);
-      } catch (error) {
-        this.logger.error(
-          'Failed to sync user data with e-commerce service',
-          error instanceof Error ? error.stack : error,
-        );
-      }
+      const baseUser = await this.baseUserService.findById(
+        userProfile.baseUserId,
+      );
       this.eventEmitter.emit(
         'user.profile.completed',
         new UserProfileCompletedEvent(
           userProfile.baseUserId,
+          baseUser.email,
           userProfile.username,
           userProfile.firstName ?? '',
           userProfile.lastName ?? '',
           userProfile.phoneNumber ?? '',
+          userProfile.bio,
           userProfile.gender,
         ),
       );
@@ -65,8 +53,13 @@ export class UserService {
         isProfileComplete: true,
       });
       return userProfile;
-    } catch (error) {
-      if (error.code === '23505') {
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code: string }).code === '23505'
+      ) {
         throw new ConflictException('Username already exists');
       }
       throw error;
@@ -124,10 +117,10 @@ export class UserService {
         throw new ConflictException('Username already exists');
       }
     }
-    const updatedUser = await this.userRepository.updateProfile({
-      ...user,
-      ...updates,
-    });
+    const [updatedUser, baseUser] = await Promise.all([
+      this.userRepository.updateProfile({ ...user, ...updates }),
+      this.baseUserService.findById(userId),
+    ]);
     if (!updatedUser) {
       throw new NotFoundException('User not found after update');
     }
@@ -135,13 +128,14 @@ export class UserService {
       'user.profile.updated',
       new UserProfileUpdatedEvent(
         updatedUser.baseUserId,
+        baseUser.email,
         updatedUser.username,
         updatedUser.firstName,
         updatedUser.lastName,
         updatedUser.bio,
         updatedUser.profileImageUrl,
         updatedUser.gender,
-        updatedUser.phoneNumber
+        updatedUser.phoneNumber,
       ),
     );
     return this.getProfile(updatedUser.baseUserId);
@@ -151,8 +145,10 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    await this.baseUserService.deleteBaseUser(user.baseUserId);
-    await this.userRepository.deleteUser(user.id);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(UserProfile, { id: user.id });
+      await manager.delete(BaseUser, { id: user.baseUserId });
+    });
     this.eventEmitter.emit(
       'user.profile.deleted',
       new UserProfileDeletedEvent(user.baseUserId, user.username),
@@ -167,10 +163,10 @@ export class UserService {
       'users/profile',
     );
     const imageUrl = uploadResult.secure_url;
-    const updatedUser = await this.userRepository.updateProfileImage(
-      userId,
-      imageUrl,
-    );
+    const [updatedUser, baseUser] = await Promise.all([
+      this.userRepository.updateProfileImage(userId, imageUrl),
+      this.baseUserService.findById(userId),
+    ]);
     if (!updatedUser) {
       throw new NotFoundException('User not found');
     }
@@ -178,13 +174,14 @@ export class UserService {
       'user.profile.updated',
       new UserProfileUpdatedEvent(
         updatedUser.baseUserId,
+        baseUser.email,
         updatedUser.username,
         updatedUser.firstName,
         updatedUser.lastName,
         updatedUser.bio,
         updatedUser.profileImageUrl,
         updatedUser.gender,
-        updatedUser.phoneNumber
+        updatedUser.phoneNumber,
       ),
     );
     return this.getProfile(updatedUser.baseUserId);
@@ -209,44 +206,7 @@ export class UserService {
       firstName: user.firstName,
       lastName: user.lastName,
       profileImageUrl: user.profileImageUrl,
-      score: parseInt(raw[index]?.score ?? 0),
+      score: parseFloat((raw[index] as { score?: string })?.score ?? '0'),
     }));
-  }
-  private async sendUserDataToCommerceService(
-    user: UserProfile,
-    accessToken: string,
-  ) {
-    const url = this.eCommerceServiceConfig.serviceUrl;
-    const formData = new FormData();
-    formData.append('userName', user.username);
-    formData.append('firstName', user.firstName ?? '');
-    formData.append('lastName', user.lastName ?? '');
-    formData.append('phoneNumber', user.phoneNumber ?? '');
-    const genderChar: Record<string, string> = {
-      MALE: 'M',
-      FEMALE: 'F',
-      OTHER: 'O',
-      PREFER_NOT_TO_SAY: 'P',
-    };
-    formData.append('gender', genderChar[user.gender] ?? user.gender);
-
-    const response = await fetch(`${url}/customer/profile/setup`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: formData,
-    });
-
-    const responseBody = await response.text();
-    this.logger.log(
-      `Commerce service response: ${response.status} - ${response.statusText} - ${responseBody}`,
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Commerce service returned ${response.status}: ${responseBody}`,
-      );
-    }
   }
 }

@@ -8,32 +8,24 @@ import { BrandProfile } from '../entities/brand-profile.entity';
 import { BrandProfileDto } from '../dto/brand-profile.dto';
 import { BaseUsersService } from '../../auth/services/base-user.service';
 import { CloudinaryService } from '../../cloudinary/cloudinary.service';
-import { Role } from '../..//auth/entities/base-user.entity';
-import { BrandSearchResponseDto } from '../dto/brand-search-response.dto ';
+import { BaseUser, Role } from '../../auth/entities/base-user.entity';
+import { BrandSearchResponseDto } from '../dto/brand-search-response.dto';
 import { BrandProfileUpdateDto } from '../dto/brand-profile-update.dto';
-import { ECommerceConfig } from '@/config/e_commerce.config';
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BrandProfileCompletedEvent } from '../events/brand-profile-completed.event';
 import { BrandProfileUpdatedEvent } from '../events/brand-profile-updated.event';
 import { BrandProfileDeletedEvent } from '../events/brand-profile-deleted.event';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class BrandService {
-  private readonly eCommerceServiceConfig: ECommerceConfig;
-  private readonly logger = new Logger(BrandService.name);
-
   constructor(
     protected readonly brandRepository: BrandRepository,
     private readonly BaseUserService: BaseUsersService,
     private readonly CloudinaryService: CloudinaryService,
-    private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
-  ) {
-    this.eCommerceServiceConfig =
-      this.configService.get<ECommerceConfig>('ecommerce')!;
-  }
+    private readonly dataSource: DataSource,
+  ) {}
   public async completeProfile(
     baseUserId: string,
     brandData: Partial<BrandProfile>,
@@ -41,14 +33,16 @@ export class BrandService {
     brandData = { ...brandData, baseUserId };
     try {
       const brand = await this.brandRepository.createBrand(brandData);
+      const baseUser = await this.BaseUserService.findById(brand.baseUserId);
       this.eventEmitter.emit(
         'brand.profile.completed',
         new BrandProfileCompletedEvent(
           brand.baseUserId,
+          baseUser.email,
           brand.brandName ?? '',
           brand.username,
           brand.bio ?? '',
-          brand.websiteUrl ?? ''
+          brand.websiteUrl ?? '',
         ),
       );
       // Update the base user to indicate their profile is complete
@@ -56,8 +50,13 @@ export class BrandService {
         isProfileComplete: true,
       });
       return brand;
-    } catch (error) {
-      if (error.code === '23505') {
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code: string }).code === '23505'
+      ) {
         throw new ConflictException('Username already exists');
       }
       throw error;
@@ -78,9 +77,11 @@ export class BrandService {
     return await this.brandRepository.findByBaseUserId(baseUserId);
   }
   public async getProfile(brandId: string): Promise<BrandProfileDto> {
-    const brand = await this.brandRepository.findByBaseUserId(brandId);
-    const baseUser = await this.BaseUserService.findById(brandId);
-    if (!brand) {
+    const [brand, baseUser] = await Promise.all([
+      this.brandRepository.findByBaseUserId(brandId),
+      this.BaseUserService.findById(brandId),
+    ]);
+    if (!brand || !baseUser) {
       throw new NotFoundException('Brand not found');
     }
     const profile: BrandProfileDto = {
@@ -99,7 +100,6 @@ export class BrandService {
   public async updateProfileImage(
     brandId: string,
     image: Express.Multer.File,
-    accessToken: string,
   ): Promise<BrandProfileDto> {
     const uploadResult = await this.CloudinaryService.uploadFile(
       image,
@@ -112,28 +112,23 @@ export class BrandService {
     if (!updatedBrand) {
       throw new NotFoundException('Brand not found');
     }
-    const profile = await this.getProfile(updatedBrand.baseUserId);
+    const [profile, baseUser] = await Promise.all([
+      this.getProfile(updatedBrand.baseUserId),
+      this.BaseUserService.findById(updatedBrand.baseUserId),
+    ]);
 
     this.eventEmitter.emit(
       'brand.profile.updated',
       new BrandProfileUpdatedEvent(
         updatedBrand.baseUserId,
+        baseUser.email,
         updatedBrand.brandName,
         updatedBrand.username,
         updatedBrand.bio,
         updatedBrand.websiteUrl,
-        updatedBrand.profileImageUrl
+        updatedBrand.profileImageUrl,
       ),
     );
-
-    try {
-      await this.sendBrandDataToCommerceService(profile, accessToken);
-    } catch (error) {
-      this.logger.error(
-        'Failed to sync brand data with e-commerce service',
-        error instanceof Error ? error.stack : error,
-      );
-    }
 
     return profile;
   }
@@ -150,11 +145,13 @@ export class BrandService {
     if (!brand) {
       throw new NotFoundException('Brand not found');
     }
-    await this.brandRepository.deleteBrand(brand.id);
-    await this.BaseUserService.deleteBaseUser(brand.baseUserId);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(BrandProfile, { id: brand.id });
+      await manager.delete(BaseUser, { id: brand.baseUserId });
+    });
     this.eventEmitter.emit(
       'brand.profile.deleted',
-      new BrandProfileDeletedEvent(brand.id, brand.username)
+      new BrandProfileDeletedEvent(brand.id, brand.username),
     );
   }
 
@@ -170,7 +167,7 @@ export class BrandService {
       username: brand.username,
       brandName: brand.brandName,
       profileImageUrl: brand.profileImageUrl,
-      score: parseInt(raw[index]?.score ?? 0),
+      score: parseFloat((raw[index] as { score?: string })?.score ?? '0'),
     }));
   }
   public async updateProfile(
@@ -190,49 +187,22 @@ export class BrandService {
       }
     }
     Object.assign(brand, updates);
-    const updatedBrand = await this.brandRepository.updateProfile(brand);
+    const [updatedBrand, baseUser] = await Promise.all([
+      this.brandRepository.updateProfile(brand),
+      this.BaseUserService.findById(brandId),
+    ]);
     this.eventEmitter.emit(
       'brand.profile.updated',
       new BrandProfileUpdatedEvent(
         updatedBrand.baseUserId,
+        baseUser.email,
         updatedBrand.brandName,
         updatedBrand.username,
         updatedBrand.bio,
         updatedBrand.websiteUrl,
-        updatedBrand.profileImageUrl
+        updatedBrand.profileImageUrl,
       ),
     );
     return this.getProfile(updatedBrand.baseUserId);
-  }
-  public async sendBrandDataToCommerceService(
-    brand: BrandProfileDto,
-    accessToken: string,
-  ) {
-    const url = this.eCommerceServiceConfig.serviceUrl;
-    const formData = new FormData();
-    formData.append('username', brand.username ?? '');
-    formData.append('phoneNumber', brand.phoneNumber ?? '');
-    formData.append('bio', brand.bio ?? '');
-    formData.append('brandName', brand.brandName ?? '');
-    formData.append('profileImageUrl', brand.profileImageUrl ?? '');
-
-    const response = await fetch(`${url}/brands/profile/setup`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: formData,
-    });
-
-    const responseBody = await response.text();
-    this.logger.log(
-      `Commerce service response: ${response.status} - ${response.statusText} - ${responseBody}`,
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Commerce service returned ${response.status}: ${responseBody}`,
-      );
-    }
   }
 }

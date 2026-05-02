@@ -4,6 +4,6 @@ export class PostUpdatedEvent {
   constructor(
     public readonly post: Post,
     public readonly authorId: string,
-    public readonly updatedAt: Date
+    public readonly updatedAt: Date,
   ) {}
 }

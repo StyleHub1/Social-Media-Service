@@ -1,4 +1,11 @@
-import { IsArray, IsEnum, IsOptional, IsString, IsUrl, ArrayMaxSize } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ArrayMaxSize,
+} from 'class-validator';
 import { PostVisibility } from '../entities/post.entity';
 
 export class UpdatePostDto {

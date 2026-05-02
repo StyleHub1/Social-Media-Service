@@ -1,7 +1,9 @@
 import { Role } from '@/modules/auth/entities/base-user.entity';
 import {
-  IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, MaxLength, IsEnum, IsUrl, ValidateIf, 
-  Matches,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEnum,
   IsNumber,
   IsObject,
 } from 'class-validator';
@@ -49,5 +51,4 @@ export class UserProfileDto {
 
   @IsNumber()
   score?: number; // Optional score field for search results
-
 }

@@ -1,18 +1,22 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import {
+  PostgreSqlContainer,
+  StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
 import { testAccount } from '../utils/test-data';
-
-// Mock EmailService to prevent actual API calls
-const mockEmailService = {
-  sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
-  sendWelcomeEmail: jest.fn().mockResolvedValue(true),
-};
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 
 jest.setTimeout(60000); // Containers can take time
 
@@ -50,6 +54,10 @@ describe('Auth Password Reset (E2E)', () => {
       .useValue(dataSource)
       .overrideProvider(EmailService)
       .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -73,12 +81,14 @@ describe('Auth Password Reset (E2E)', () => {
     const entities = dataSource.entityMetadatas;
     for (const entity of entities) {
       const repository = dataSource.getRepository(entity.name);
-      await repository.query(`TRUNCATE TABLE "${entity.tableName}" RESTART IDENTITY CASCADE;`);
+      await repository.query(
+        `TRUNCATE TABLE "${entity.tableName}" RESTART IDENTITY CASCADE;`,
+      );
     }
 
     // Seed User
     const hashedPassword = await bcrypt.hash(testAccount.password, 10);
-    await dataSource.getRepository("BaseUser").save({
+    await dataSource.getRepository('BaseUser').save({
       ...testAccount,
       password: hashedPassword,
       isEmailVerified: true,
@@ -103,11 +113,15 @@ describe('Auth Password Reset (E2E)', () => {
 
     expect(mockEmailService.sendPasswordResetEmail).toHaveBeenCalled();
 
-    const user = await dataSource.getRepository("BaseUser").findOne({ where: { email: testAccount.email } });
+    const user = await dataSource
+      .getRepository('BaseUser')
+      .findOne({ where: { email: testAccount.email } });
     expect(user).toBeDefined();
 
     // STEP 1b: Retrieve reset code from DB
-    const resetTokenEntry = await dataSource.getRepository("ResetToken").findOne({ where: { baseUserId: user!.id } });
+    const resetTokenEntry = await dataSource
+      .getRepository('ResetToken')
+      .findOne({ where: { baseUserId: user!.id } });
     expect(resetTokenEntry).toBeDefined();
     const validCode = resetTokenEntry!.token;
 

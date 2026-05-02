@@ -1,5 +1,5 @@
-import { IsEnum, IsOptional, IsString } from "class-validator";
-import { Gender } from "../enums/user-gender";
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { Gender } from '../enums/user-gender';
 
 export class UserCompleteProfileDto {
   @IsString()

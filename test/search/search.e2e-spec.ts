@@ -12,6 +12,14 @@ import { Role } from 'src/modules/common/enums/role.enum';
 import * as bcrypt from 'bcrypt';
 import { ConfigModule } from '@nestjs/config';
 import { Gender } from '../../src/modules/user/enums/user-gender';
+import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 
 jest.setTimeout(30000);
 
@@ -43,7 +51,7 @@ describe('Search (E2E)', () => {
     });
 
     await dataSource.initialize();
-    
+
     // IMPORTANT: Enable pg_trgm for the similarity() function used in your repositories
     await dataSource.query('CREATE EXTENSION IF NOT EXISTS pg_trgm;');
 
@@ -58,6 +66,12 @@ describe('Search (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
+      .overrideProvider(EmailService)
+      .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -125,7 +139,11 @@ describe('Search (E2E)', () => {
     // 3. Login to get the token for protected routes
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ role: Role.USER, email: 'omar_user@test.com', password: 'password123!' })
+      .send({
+        role: Role.USER,
+        email: 'omar_user@test.com',
+        password: 'password123!',
+      })
       .expect(200);
 
     accessToken = loginRes.body.accessToken;
@@ -134,9 +152,7 @@ describe('Search (E2E)', () => {
   // --- GET /search ---
 
   it('should return 401 if no token provided', async () => {
-    await request(app.getHttpServer())
-      .get('/search?query=omar')
-      .expect(401);
+    await request(app.getHttpServer()).get('/search?query=omar').expect(401);
   });
 
   it('should return empty array if query is empty or whitespace', async () => {
@@ -156,7 +172,7 @@ describe('Search (E2E)', () => {
 
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body.length).toBeGreaterThan(0);
-    
+
     // Check that we got both brand and user results
     const types = response.body.map((item: any) => item.type);
     expect(types).toContain(Role.USER);
@@ -228,7 +244,7 @@ describe('Search (E2E)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
-    // Note: If this fails with 404, check the SearchService.getAccountById implementation 
+    // Note: If this fails with 404, check the SearchService.getAccountById implementation
     // to ensure user service throwing 404 doesn't break the fallback to brand.
     expect(response.body.id).toBe(testBrandId);
     expect(response.body.type).toBe(Role.BRAND);

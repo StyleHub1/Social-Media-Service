@@ -5,29 +5,27 @@ import 'multer';
 
 @Injectable()
 export class CloudinaryService {
-
   async uploadFile(
-  file: Express.Multer.File,
-  folder: string,
-): Promise<UploadApiResponse> {
-  return new Promise((resolve, reject) => {
+    file: Express.Multer.File,
+    folder: string,
+  ): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      const isVideo = file.mimetype.startsWith('video');
+      const resourceType = isVideo ? 'video' : 'image';
 
-    const isVideo = file.mimetype.startsWith('video');
-    const resourceType = isVideo ? 'video' : 'image';
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: resourceType,
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          if (!result) return reject(new Error('Cloudinary upload failed'));
+          resolve(result);
+        },
+      );
 
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: resourceType,
-      },
-      (error, result) => {
-        if (error) return reject(error);
-        if (!result) return reject(new Error('Cloudinary upload failed'));
-        resolve(result);
-      },
-    );
-
-    streamifier.createReadStream(file.buffer).pipe(uploadStream);
-  });
- }
+      streamifier.createReadStream(file.buffer).pipe(uploadStream);
+    });
+  }
 }

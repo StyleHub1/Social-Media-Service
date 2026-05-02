@@ -81,7 +81,14 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
   private reconnect() {
     this.channel = null;
     this.connection = null;
-    this.reconnectTimer = setTimeout(() => this.connect(), 5000);
+    this.reconnectTimer = setTimeout(() => {
+      void this.connect().catch((err) =>
+        this.logger.error(
+          'RabbitMQ reconnect error',
+          err instanceof Error ? err.message : String(err),
+        ),
+      );
+    }, 5000);
   }
 
   private async disconnect(): Promise<void> {
@@ -92,7 +99,12 @@ export class MessagingService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.channel?.close();
       await this.connection?.close();
-    } catch {}
+    } catch (err) {
+      this.logger.warn(
+        'Error during RabbitMQ disconnect',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   }
 
   // =========================

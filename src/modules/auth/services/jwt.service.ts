@@ -25,12 +25,18 @@ export class JwtService implements JwtServiceInterface {
       expiresIn: this.jwtConfig.expiresIn,
     });
   }
-  generateRefreshToken(payload: JwtPayload): { refreshToken: string; expiresIn: string } {
-    const refreshToken=this.jwtService.sign(payload, {
+  generateRefreshToken(payload: JwtPayload): {
+    refreshToken: string;
+    expiresIn: string;
+  } {
+    const refreshToken = this.jwtService.sign(payload, {
       secret: this.jwtConfig.refreshSecret, // separate secret for refresh tokens
       expiresIn: this.jwtConfig.refreshExpiresIn, // e.g., '7d'
     });
-    return { refreshToken : refreshToken, expiresIn: this.jwtConfig.refreshExpiresIn };
+    return {
+      refreshToken: refreshToken,
+      expiresIn: this.jwtConfig.refreshExpiresIn,
+    };
   }
   generateEmailVerificationToken(email: string): string {
     return this.jwtService.sign(
@@ -49,7 +55,7 @@ export class JwtService implements JwtServiceInterface {
     try {
       return this.jwtService.verify(token, {
         secret: this.jwtConfig.secret,
-      }) as JwtPayload;
+      });
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
@@ -58,7 +64,7 @@ export class JwtService implements JwtServiceInterface {
     try {
       return this.jwtService.verify(token, {
         secret: this.jwtConfig.refreshSecret,
-      }) as JwtPayload;
+      });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -67,7 +73,7 @@ export class JwtService implements JwtServiceInterface {
     try {
       const payload = this.jwtService.verify(token, {
         secret: this.jwtConfig.emailVerificationSecret,
-      }) as { email: string, type: string };
+      });
       if (payload.type !== 'email-verification') {
         throw new UnauthorizedException('Invalid email verification token');
       }
@@ -78,6 +84,6 @@ export class JwtService implements JwtServiceInterface {
   }
 
   decodeToken(token: string): JwtPayload {
-    return this.jwtService.decode(token) as JwtPayload;
+    return this.jwtService.decode(token);
   }
 }

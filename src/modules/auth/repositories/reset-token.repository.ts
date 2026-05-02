@@ -14,14 +14,17 @@ export class ResetTokenRepository {
   // 1. Create or Overwrite (Delete old code first)
   async create(data: Partial<ResetToken>): Promise<ResetToken> {
     // Clean up any existing code for this user so they only have 1 active code
-    await this.repo.delete({ baseUserId: data.baseUserId});
+    await this.repo.delete({ baseUserId: data.baseUserId });
 
     const token = this.repo.create(data);
     return await this.repo.save(token);
   }
 
   // 2. Find a specific valid token
-  async findValidToken(baseUserId: string, token: string): Promise<ResetToken | null> {
+  async findValidToken(
+    baseUserId: string,
+    token: string,
+  ): Promise<ResetToken | null> {
     return await this.repo.findOne({
       where: {
         baseUserId,

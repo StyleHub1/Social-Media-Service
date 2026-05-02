@@ -20,7 +20,7 @@ describe('PasswordService', () => {
   });
 
   //bcrypt.hash -> was called with the correct password and salt
-  // mocks and spies 
+  // mocks and spies
   //spies is used to track calls to a function and its arguments, while mocks can replace the implementation of a function with a custom one.
   it('should hash password correctly', async () => {
     const password = 'myPassword';
@@ -46,5 +46,4 @@ describe('PasswordService', () => {
     const result = await service.verifyPassword(password, hashedPassword);
     expect(result).toBe(false);
   });
-
 });

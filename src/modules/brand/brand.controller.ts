@@ -30,68 +30,66 @@ export class BrandController {
 
   @Get('/profile')
   @Roles(Role.BRAND)
-    async getProfile(@CurrentUser() user: JwtPayload): Promise<BrandProfileDto> {
-      return await this.brandService.getProfile(user.sub);
-    }
+  async getProfile(@CurrentUser() user: JwtPayload): Promise<BrandProfileDto> {
+    return await this.brandService.getProfile(user.sub);
+  }
   @Post('/complete-profile')
   @Roles(Role.BRAND)
-    @HttpCode(HttpStatus.CREATED)
-    async completeBrandProfile(
-      @CurrentUser() user: JwtPayload,
-      @Body() body: BrandCompleteProfileDto,
-    ) {
-      return await this.brandService.completeProfile(user.sub, body);
-    }
+  @HttpCode(HttpStatus.CREATED)
+  async completeBrandProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() body: BrandCompleteProfileDto,
+  ) {
+    return await this.brandService.completeProfile(user.sub, body);
+  }
   @Post('/profile/image')
   @Roles(Role.BRAND)
-    @UseInterceptors(
-      FileInterceptor('file', {
-        limits: {
-          fileSize: 4 * 1024 * 1024, // 4MB
-        },
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 4 * 1024 * 1024, // 4MB
+      },
+    }),
+  )
+  async uploadProfileImage(
+    @CurrentUser() user: JwtPayload,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({
+            fileType: /(jpg|jpeg|png|webp)$/,
+          }),
+          new MaxFileSizeValidator({
+            maxSize: 4 * 1024 * 1024,
+          }),
+        ],
       }),
     )
-    async uploadProfileImage(
-      @CurrentUser() user: JwtPayload,
-      @Headers('authorization') authorization: string,
-      @UploadedFile(
-        new ParseFilePipe({
-          validators: [
-            new FileTypeValidator({
-              fileType: /(jpg|jpeg|png|webp)$/,
-            }),
-            new MaxFileSizeValidator({
-              maxSize: 4 * 1024 * 1024,
-            }),
-          ],
-        }),
-      )
-      file: Express.Multer.File,
-    ) {
-      const accessToken = authorization?.replace('Bearer ', '');
-      await this.brandService.updateProfileImage(user.sub, file, accessToken);
-      return {
-        message: 'Image uploaded successfully',
-      };
-    }
+    file: Express.Multer.File,
+  ) {
+    await this.brandService.updateProfileImage(user.sub, file);
+    return {
+      message: 'Image uploaded successfully',
+    };
+  }
   @Get('/profile/image')
   @Roles(Role.BRAND)
-    async getProfileImage(@CurrentUser() user: JwtPayload) {
-      return await this.brandService.getProfileImage(user.sub);
-   }
+  async getProfileImage(@CurrentUser() user: JwtPayload) {
+    return await this.brandService.getProfileImage(user.sub);
+  }
 
   @Patch('/profile')
   @Roles(Role.BRAND)
-    async updateProfile(
-      @CurrentUser() user: JwtPayload,
-      @Body() updates: Partial<BrandProfileUpdateDto>,
-    ): Promise<BrandProfileDto> {
-      return this.brandService.updateProfile(user.sub, updates);
-    }
+  async updateProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() updates: Partial<BrandProfileUpdateDto>,
+  ): Promise<BrandProfileDto> {
+    return this.brandService.updateProfile(user.sub, updates);
+  }
   @Delete('/account')
   @Roles(Role.BRAND)
-    async deleteProfile(@CurrentUser() user: JwtPayload) {
-      await this.brandService.deleteProfile(user.sub);
-      return { message: 'Account deleted successfully' };
-    }
+  async deleteProfile(@CurrentUser() user: JwtPayload) {
+    await this.brandService.deleteProfile(user.sub);
+    return { message: 'Account deleted successfully' };
+  }
 }

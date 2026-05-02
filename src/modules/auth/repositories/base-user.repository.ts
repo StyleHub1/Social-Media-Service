@@ -23,10 +23,7 @@ export class BaseUsersRepository {
     return this.baseUserRepo.save(user);
   }
 
-  async update(
-    id: string,
-    data: Partial<BaseUser>,
-  ): Promise<BaseUser | null> {
+  async update(id: string, data: Partial<BaseUser>): Promise<BaseUser | null> {
     const user = await this.findById(id);
     if (!user) return null;
 

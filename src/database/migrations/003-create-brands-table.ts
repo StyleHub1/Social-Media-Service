@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateBrandProfilesTable1707483903000 implements MigrationInterface {
   name = 'CreateBrandProfilesTable1707483903000';

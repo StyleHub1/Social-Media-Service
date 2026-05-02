@@ -10,6 +10,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module';
 import { ConfigModule } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { EmailService } from 'src/modules/auth/services/email.service';
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 import {
   testAccount,
   testPost,
@@ -57,6 +65,12 @@ describe('Posts (E2E)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(dataSource)
+      .overrideProvider(EmailService)
+      .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -78,11 +92,14 @@ describe('Posts (E2E)', () => {
   });
 
   beforeEach(async () => {
+    // Allow async feed fan-out events from the previous test to settle before cleanup
+    await new Promise((r) => setTimeout(r, 300));
+    await dataSource.query('DELETE FROM "feed_items"');
     await dataSource.query('DELETE FROM "posts"');
     await dataSource.query('DELETE FROM "base_users"');
 
     const hashedPassword = await bcrypt.hash(testAccount.password, 10);
-    const baseUser = await dataSource.getRepository('base_users').save({
+    await dataSource.getRepository('base_users').save({
       ...testAccount,
       password: hashedPassword,
       isEmailVerified: true,
@@ -201,9 +218,7 @@ describe('Posts (E2E)', () => {
         .send({ content: 'Second post' })
         .expect(201);
 
-      const res = await request(app.getHttpServer())
-        .get('/posts')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/posts').expect(200);
 
       expect(res.body).toHaveProperty('items');
       expect(res.body).toHaveProperty('meta');
@@ -243,9 +258,7 @@ describe('Posts (E2E)', () => {
         .send(userLoginDto)
         .expect(200);
 
-      const res = await request(app.getHttpServer())
-        .get('/posts')
-        .expect(200);
+      const res = await request(app.getHttpServer()).get('/posts').expect(200);
 
       expect(res.body.items).toHaveLength(0);
       expect(res.body.meta.total).toBe(0);
@@ -269,7 +282,7 @@ describe('Posts (E2E)', () => {
         .send(userLoginDto)
         .expect(200);
       const token = loginRes.body.accessToken;
-      const userId=loginRes.body.user.id;
+      const userId = loginRes.body.user.id;
 
       await request(app.getHttpServer())
         .post('/posts')
@@ -296,7 +309,7 @@ describe('Posts (E2E)', () => {
         .send(userLoginDto)
         .expect(200);
       const token = loginRes.body.accessToken;
-      const userId=loginRes.body.user.id;
+      const userId = loginRes.body.user.id;
       const user = await dataSource
         .getRepository('base_users')
         .findOne({ where: { email: testAccount.email } });
@@ -328,9 +341,7 @@ describe('Posts (E2E)', () => {
 
   describe('GET /posts/:id', () => {
     it('should return 401 if no token provided', async () => {
-      await request(app.getHttpServer())
-        .get('/posts/some-uuid')
-        .expect(401);
+      await request(app.getHttpServer()).get('/posts/some-uuid').expect(401);
     });
 
     it('should return a post by id', async () => {
@@ -437,7 +448,7 @@ describe('Posts (E2E)', () => {
       expect(res.body.visibility).toBe('PRIVATE');
     });
 
-    it('should return 403 when updating another user\'s post', async () => {
+    it("should return 403 when updating another user's post", async () => {
       // 1. Create a second user and their post directly in the DB
       const hashedPass = await bcrypt.hash('password123', 10);
       const secondUser = await dataSource.getRepository('base_users').save({
@@ -488,9 +499,7 @@ describe('Posts (E2E)', () => {
 
   describe('DELETE /posts/:id', () => {
     it('should return 401 if no token provided', async () => {
-      await request(app.getHttpServer())
-        .delete('/posts/some-uuid')
-        .expect(401);
+      await request(app.getHttpServer()).delete('/posts/some-uuid').expect(401);
     });
 
     it('should soft-delete a post and return 204', async () => {
@@ -518,7 +527,7 @@ describe('Posts (E2E)', () => {
         .expect(404);
     });
 
-    it('should return 403 when deleting another user\'s post', async () => {
+    it("should return 403 when deleting another user's post", async () => {
       // 1. Create a second user and their post directly in the DB
       const hashedPass = await bcrypt.hash('password123', 10);
       const secondUser = await dataSource.getRepository('base_users').save({

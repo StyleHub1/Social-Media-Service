@@ -47,8 +47,7 @@ export class PostsRepository {
   async findById(id: string): Promise<Post | null> {
     const qb = this.repository.createQueryBuilder('post');
 
-    qb.where('post.id = :id', { id })
-      .andWhere('post.deletedAt IS NULL');
+    qb.where('post.id = :id', { id }).andWhere('post.deletedAt IS NULL');
 
     return await qb.getOne();
   }

@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateResetTokensTable1807483924000 implements MigrationInterface {
   name = 'CreateResetTokensTable1807483924000';

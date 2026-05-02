@@ -12,7 +12,6 @@ import { UserModule } from './modules/user/user.module';
 import { BrandModule } from './modules/brand/brand.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { authConfig } from './config/auth.config';
-import { eCommerceConfig } from './config/e_commerce.config';
 import { rabbitmqConfig } from './config/rabbitmq.config';
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { PasswordService } from './modules/auth/services/password.service';
@@ -26,7 +25,11 @@ import { PostsModule } from './modules/posts/posts.module';
 import { FollowModule } from './modules/follow/follow.module';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { FeedModule } from './modules/feed/feed.module';
+import { NotificationModule } from './modules/notifications/notification.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -43,13 +46,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     }),
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [
-        appConfig,
-        typeOrmConfig,
-        authConfig,
-        eCommerceConfig,
-        rabbitmqConfig,
-      ],
+      load: [appConfig, typeOrmConfig, authConfig, rabbitmqConfig],
       validationSchema: appConfigSchema,
       validationOptions: {
         whitelist: true,
@@ -66,8 +63,12 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     FollowModule,
     InteractionsModule,
     FeedModule,
+    NotificationModule,
+    ChatModule,
     MessagingModule,
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
   ],
   controllers: [AppController],
   providers: [
@@ -84,6 +85,10 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

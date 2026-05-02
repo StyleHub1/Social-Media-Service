@@ -13,11 +13,13 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthConfig } from 'src/config/auth.config';
 import { EmailService } from 'src/modules/auth/services/email.service';
-
-const mockEmailService = {
-  sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
-  sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
-};
+import { MessagingService } from 'src/modules/messaging/messaging.service';
+import { CloudinaryService } from 'src/modules/cloudinary/cloudinary.service';
+import {
+  mockEmailService,
+  mockMessagingService,
+  mockCloudinaryService,
+} from '../utils/mock-providers';
 
 jest.setTimeout(60000);
 
@@ -54,6 +56,10 @@ describe('Auth Email Verification (E2E)', () => {
       .useValue(dataSource)
       .overrideProvider(EmailService)
       .useValue(mockEmailService)
+      .overrideProvider(MessagingService)
+      .useValue(mockMessagingService)
+      .overrideProvider(CloudinaryService)
+      .useValue(mockCloudinaryService)
       .compile();
 
     app = moduleFixture.createNestApplication();
