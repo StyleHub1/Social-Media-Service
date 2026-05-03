@@ -7,15 +7,6 @@ import * as fs from 'fs';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 🔥 CORS MUST be first (before pipes/guards)
-  app.enableCors({
-    origin: true, // allow all origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false,
-  });
-
-  // ✅ Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -25,7 +16,6 @@ async function bootstrap() {
         const messages =
           Object.values(errors[0].constraints ?? {}).join(', ') ||
           'Validation failed';
-
         return new BadRequestException({
           statusCode: 400,
           message: messages,
@@ -40,20 +30,23 @@ async function bootstrap() {
     .setTitle('My API')
     .setDescription('Auto-generated API docs')
     .setVersion('1.0')
-    .addBearerAuth()
+    .addBearerAuth() // remove if you don't use JWT
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/docs', app, document); // accessible at /api/docs
 
-  // optional: save swagger.json
+  // ✅ Save swagger.json locally
   fs.writeFileSync('./swagger.json', JSON.stringify(document, null, 2));
   console.log('📄 swagger.json generated');
 
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://style-hub-social-media-fe-d369dfc7ce40.herokuapp.com'],
+    credentials: true,
+  });
+
   const port = process.env.PORT || 8000;
   await app.listen(port, '0.0.0.0');
-
-  console.log(`🚀 Application running on: http://0.0.0.0:${port}`);
+  console.log(`Application is running on: http://0.0.0.0:${port}`);
 }
-
 bootstrap();
