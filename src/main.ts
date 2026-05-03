@@ -7,6 +7,15 @@ import * as fs from 'fs';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // 🔥 CORS MUST be first (before pipes/guards)
+  app.enableCors({
+    origin: true, // allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
+  });
+
+  // ✅ Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -16,6 +25,7 @@ async function bootstrap() {
         const messages =
           Object.values(errors[0].constraints ?? {}).join(', ') ||
           'Validation failed';
+
         return new BadRequestException({
           statusCode: 400,
           message: messages,
@@ -30,23 +40,20 @@ async function bootstrap() {
     .setTitle('My API')
     .setDescription('Auto-generated API docs')
     .setVersion('1.0')
-    .addBearerAuth() // remove if you don't use JWT
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document); // accessible at /api/docs
+  SwaggerModule.setup('api/docs', app, document);
 
-  // ✅ Save swagger.json locally
+  // optional: save swagger.json
   fs.writeFileSync('./swagger.json', JSON.stringify(document, null, 2));
   console.log('📄 swagger.json generated');
 
-app.enableCors({
-  origin: true,
-  credentials: false,
-});
-
   const port = process.env.PORT || 8000;
   await app.listen(port, '0.0.0.0');
-  console.log(`Application is running on: http://0.0.0.0:${port}`);
+
+  console.log(`🚀 Application running on: http://0.0.0.0:${port}`);
 }
+
 bootstrap();
