@@ -40,8 +40,14 @@ async function bootstrap() {
   fs.writeFileSync('./swagger.json', JSON.stringify(document, null, 2));
   console.log('📄 swagger.json generated');
 
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://style-hub-front-end-f71037b48364.herokuapp.com',
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL,
+    origin: allowedOrigins,
     credentials: true,
   });
 
