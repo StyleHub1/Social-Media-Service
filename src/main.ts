@@ -41,7 +41,7 @@ async function bootstrap() {
   console.log('📄 swagger.json generated');
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://style-hub-social-media-fe-d369dfc7ce40.herokuapp.com'],
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'https://style-hub-front-end-f71037b48364.herokuapp.com'],
     credentials: true,
   });
 
