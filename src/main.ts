@@ -41,7 +41,7 @@ async function bootstrap() {
   console.log('📄 swagger.json generated');
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'],
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   });
 
