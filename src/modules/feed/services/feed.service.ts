@@ -31,37 +31,44 @@ export class FeedService {
 
     const items: FeedItemResponseDto[] = [];
 
-    // PERSONAL FEED
-    if (feedItems.length > 0) {
-      items.push(
-        ...feedItems.map((fi: any) => ({
-          id: fi.id,
-          type: fi.type,
-          createdAt: fi.createdAt,
-          post: this.mapPost(fi.post, fi.post?.author),
-        })),
-      );
-    }
+    // -----------------------
+    // PERSONAL FEED FIRST
+    // -----------------------
+    const mappedPersonal = feedItems.map((fi: any) => ({
+      id: fi.id,
+      type: fi.type,
+      createdAt: fi.createdAt,
+      post: this.mapPost(fi.post, fi.post?.author),
+    }));
 
+    items.push(...mappedPersonal);
+
+    // -----------------------
     // GLOBAL FALLBACK
+    // -----------------------
     const remainingSlots = limit - items.length;
 
     if (remainingSlots > 0) {
-      items.push(
-        ...globalPosts.slice(0, remainingSlots).map((p: any) => ({
+      const mappedGlobal = globalPosts
+        .slice(0, remainingSlots)
+        .map((p: any) => ({
           id: p.id,
           type: FeedItemType.GLOBAL,
           createdAt: p.createdAt,
           post: this.mapPost(p, (p as any).author),
-        })),
-      );
+        }));
+
+      items.push(...mappedGlobal);
     }
 
-    // ✅ FIXED TOTAL (NO DOUBLE COUNTING)
-    const total =
-      feedTotal > 0
-        ? feedTotal
-        : globalTotal;
+    // -----------------------
+    // FIXED TOTAL LOGIC
+    // -----------------------
+    const hasPersonal = feedTotal > 0;
+
+    const total = hasPersonal
+      ? feedTotal
+      : globalTotal;
 
     return {
       items,
@@ -73,11 +80,7 @@ export class FeedService {
     };
   }
 
-  async fanOutPost(
-    postId: string,
-    authorId: string,
-    createdAt: Date,
-  ): Promise<void> {
+  async fanOutPost(postId: string, authorId: string, createdAt: Date) {
     const followerIds = await this.feedRepository.getFollowerIds(authorId);
 
     const allOwners = [authorId, ...followerIds];
@@ -92,10 +95,7 @@ export class FeedService {
     await this.feedRepository.bulkInsert(items);
   }
 
-  async backfillForFollow(
-    followerId: string,
-    followingId: string,
-  ): Promise<void> {
+  async backfillForFollow(followerId: string, followingId: string) {
     const posts = await this.feedRepository.getRecentPostsByAuthor(
       followingId,
       BACKFILL_LIMIT,
@@ -111,23 +111,20 @@ export class FeedService {
     await this.feedRepository.bulkInsert(items);
   }
 
-  async cleanupForUnfollow(
-    followerId: string,
-    followingId: string,
-  ): Promise<void> {
+  async cleanupForUnfollow(followerId: string, followingId: string) {
     await this.feedRepository.deleteByOwnerAndAuthor(
       followerId,
       followingId,
     );
   }
 
-  async cleanupForDeletedPost(postId: string): Promise<void> {
+  async cleanupForDeletedPost(postId: string) {
     await this.feedRepository.deleteByPostId(postId);
   }
 
-  // -----------------------------------
-  // SAFE AUTHOR MAPPING (NO VIEW)
-  // -----------------------------------
+  // -----------------------
+  // SAFE AUTHOR MAPPING
+  // -----------------------
   private mapPost(post: Post, author: any): FeedPostDto {
     const isBrand = !!author?.brandName;
 
@@ -141,10 +138,8 @@ export class FeedService {
       images: post.images,
       videos: post.videos,
       authorId: post.authorId,
-
       authorName: name || 'Unknown',
       authorImage: author?.profileImageUrl ?? null,
-
       visibility: post.visibility,
       reactionsCount: post.reactionsCount,
       commentsCount: post.commentsCount,

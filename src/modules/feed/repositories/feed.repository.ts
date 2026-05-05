@@ -77,24 +77,16 @@ export class FeedRepository {
   }
 
   // -----------------------------------
-  // PERSONAL FEED JOIN (NO VIEW)
+  // FEED (PERSONAL)
   // -----------------------------------
-  async findFeed(
-    ownerId: string,
-    limit: number,
-    offset: number,
-  ): Promise<[any[], number]> {
+  async findFeed(ownerId: string, limit: number, offset: number) {
     const qb = this.repository
       .createQueryBuilder('fi')
       .innerJoinAndSelect('fi.post', 'p', 'p.deletedAt IS NULL')
 
-      // base user
+      // unified author join
       .innerJoin('base_users', 'bu', 'bu.id = p.authorId')
-
-      // user profile
       .leftJoin('user_profiles', 'up', 'up.baseUserId = bu.id')
-
-      // brand profile
       .leftJoin('brand_profiles', 'bp', 'bp.baseUserId = bu.id')
 
       .addSelect([
@@ -115,13 +107,10 @@ export class FeedRepository {
   }
 
   // -----------------------------------
-  // GLOBAL FEED JOIN (NO VIEW)
+  // GLOBAL FEED
   // -----------------------------------
-  async findGlobalPosts(
-    limit: number,
-    offset: number,
-  ): Promise<[Post[], number]> {
-    return this.dataSource
+  async findGlobalPosts(limit: number, offset: number) {
+    const qb = this.dataSource
       .getRepository(Post)
       .createQueryBuilder('p')
 
@@ -144,18 +133,16 @@ export class FeedRepository {
       .andWhere('p.deletedAt IS NULL')
       .orderBy('p.createdAt', 'DESC')
       .take(limit)
-      .skip(offset)
-      .getManyAndCount();
+      .skip(offset);
+
+    return qb.getManyAndCount();
   }
 
   async deleteByPostId(postId: string): Promise<void> {
     await this.repository.delete({ postId });
   }
 
-  async deleteByOwnerAndAuthor(
-    ownerId: string,
-    authorId: string,
-  ): Promise<void> {
+  async deleteByOwnerAndAuthor(ownerId: string, authorId: string): Promise<void> {
     await this.repository.delete({ ownerId, authorId });
   }
 
