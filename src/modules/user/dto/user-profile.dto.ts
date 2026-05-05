@@ -46,9 +46,6 @@ export class UserProfileDto {
   @IsNumber()
   numberOfPosts?: number;
 
-  @IsObject()
-  posts?: any;
-
   @IsNumber()
   score?: number; // Optional score field for search results
 }

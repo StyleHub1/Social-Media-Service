@@ -95,7 +95,6 @@ export class UserService {
       numberOfFollowers: baseUser.followersCount,
       numberOfFollowing: baseUser.followingCount,
       numberOfPosts: baseUser.postsCount,
-      posts: {}, // Placeholder, should be populated with actual posts data
       bio: user.bio,
       profileImageUrl: user.profileImageUrl,
     };
