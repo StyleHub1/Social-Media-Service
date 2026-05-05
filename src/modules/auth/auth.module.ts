@@ -6,7 +6,6 @@ import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypedConfigService } from 'src/config/typed-config.service';
 import { authConfig, AuthConfig } from 'src/config/auth.config';
-import { StringValue } from 'ms';
 import { PasswordService } from './services/password.service';
 import { JwtService } from './services/jwt.service';
 import { BrandModule } from '../brand/brand.module';
@@ -25,6 +24,7 @@ import { BaseUser } from './entities/base-user.entity';
 import { BaseUsersService } from './services/base-user.service';
 import { BaseUsersRepository } from './repositories/base-user.repository';
 import { EmailListenerService } from './services/email-listener.service';
+import { PostEventListener } from './listeners/post-event.listener';
 
 @Module({
   imports: [
@@ -65,6 +65,7 @@ import { EmailListenerService } from './services/email-listener.service';
     RefreshTokenRepository,
     BaseUsersService,
     BaseUsersRepository,
+    PostEventListener,
   ],
   controllers: [AuthController],
   exports: [

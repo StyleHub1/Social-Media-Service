@@ -68,16 +68,7 @@
     "/user/complete-profile": {
       "post": {
         "operationId": "UserController_completeUserProfile",
-        "parameters": [
-          {
-            "name": "authorization",
-            "required": true,
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -338,16 +329,7 @@
     "/brand/profile/image": {
       "post": {
         "operationId": "BrandController_uploadProfileImage",
-        "parameters": [
-          {
-            "name": "authorization",
-            "required": true,
-            "in": "header",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
@@ -1053,6 +1035,16 @@
       "post": {
         "operationId": "ChatController_getOrCreate",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -1207,6 +1199,10 @@
         "properties": {}
       },
       "SendDirectMessageDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateConversationDto": {
         "type": "object",
         "properties": {}
       },
