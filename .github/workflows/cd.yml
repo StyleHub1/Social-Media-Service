@@ -101,7 +101,6 @@ jobs:
             exit 1
           fi
 
-      - name: Run database migrations
         run: |
           echo "Creating one-off migration dyno..."
           printf '{"command":"npm run migration:run:prod","attach":false}' > /tmp/migration-payload.json

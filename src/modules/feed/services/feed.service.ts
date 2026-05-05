@@ -18,36 +18,58 @@ export class FeedService {
   ): Promise<PaginationResponse<FeedItemResponseDto>> {
     const { limit, offset } = query;
 
-    const [items, total] = await this.feedRepository.findFeed(
+    const [feedItems, feedTotal] = await this.feedRepository.findFeed(
       userId,
       limit,
       offset,
     );
 
-    if (total > 0) {
-      return {
-        items: items.map((fi) => ({
-          id: fi.id,
-          type: fi.type,
-          createdAt: fi.createdAt,
-          post: this.mapPost(fi.post),
-        })),
-        meta: { total, limit, offset },
-      };
-    }
-
-    const [posts, globalTotal] = await this.feedRepository.findGlobalPosts(
+    const [globalPosts, globalTotal] = await this.feedRepository.findGlobalPosts(
       limit,
       offset,
     );
+
+    const items: FeedItemResponseDto[] = [];
+
+    // PERSONAL FEED
+    if (feedItems.length > 0) {
+      items.push(
+        ...feedItems.map((fi: any) => ({
+          id: fi.id,
+          type: fi.type,
+          createdAt: fi.createdAt,
+          post: this.mapPost(fi.post, fi.post?.author),
+        })),
+      );
+    }
+
+    // GLOBAL FALLBACK
+    const remainingSlots = limit - items.length;
+
+    if (remainingSlots > 0) {
+      items.push(
+        ...globalPosts.slice(0, remainingSlots).map((p: any) => ({
+          id: p.id,
+          type: FeedItemType.GLOBAL,
+          createdAt: p.createdAt,
+          post: this.mapPost(p, (p as any).author),
+        })),
+      );
+    }
+
+    // ✅ FIXED TOTAL (NO DOUBLE COUNTING)
+    const total =
+      feedTotal > 0
+        ? feedTotal
+        : globalTotal;
+
     return {
-      items: posts.map((p) => ({
-        id: p.id,
-        type: FeedItemType.GLOBAL,
-        createdAt: p.createdAt,
-        post: this.mapPost(p),
-      })),
-      meta: { total: globalTotal, limit, offset },
+      items,
+      meta: {
+        total,
+        limit,
+        offset,
+      },
     };
   }
 
@@ -57,6 +79,7 @@ export class FeedService {
     createdAt: Date,
   ): Promise<void> {
     const followerIds = await this.feedRepository.getFollowerIds(authorId);
+
     const allOwners = [authorId, ...followerIds];
 
     const items: BulkFeedItem[] = allOwners.map((ownerId) => ({
@@ -92,20 +115,36 @@ export class FeedService {
     followerId: string,
     followingId: string,
   ): Promise<void> {
-    await this.feedRepository.deleteByOwnerAndAuthor(followerId, followingId);
+    await this.feedRepository.deleteByOwnerAndAuthor(
+      followerId,
+      followingId,
+    );
   }
 
   async cleanupForDeletedPost(postId: string): Promise<void> {
     await this.feedRepository.deleteByPostId(postId);
   }
 
-  private mapPost(post: Post): FeedPostDto {
+  // -----------------------------------
+  // SAFE AUTHOR MAPPING (NO VIEW)
+  // -----------------------------------
+  private mapPost(post: Post, author: any): FeedPostDto {
+    const isBrand = !!author?.brandName;
+
+    const name = isBrand
+      ? author.brandName
+      : `${author?.firstName ?? ''} ${author?.lastName ?? ''}`.trim();
+
     return {
       id: post.id,
       content: post.content,
       images: post.images,
       videos: post.videos,
       authorId: post.authorId,
+
+      authorName: name || 'Unknown',
+      authorImage: author?.profileImageUrl ?? null,
+
       visibility: post.visibility,
       reactionsCount: post.reactionsCount,
       commentsCount: post.commentsCount,

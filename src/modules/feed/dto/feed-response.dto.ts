@@ -7,6 +7,8 @@ export class FeedPostDto {
   images: string[];
   videos: string[];
   authorId: string;
+  authorName: string;
+  authorImage: string | null;
   visibility: PostVisibility;
   reactionsCount: number;
   commentsCount: number;

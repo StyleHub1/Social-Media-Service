@@ -23,14 +23,11 @@ export class FeedRepository {
   ) {}
 
   async bulkInsert(items: BulkFeedItem[]): Promise<void> {
-    if (items.length === 0) return;
+    if (!items.length) return;
 
-    const chunks: BulkFeedItem[][] = [];
     for (let i = 0; i < items.length; i += CHUNK_SIZE) {
-      chunks.push(items.slice(i, i + CHUNK_SIZE));
-    }
+      const chunk = items.slice(i, i + CHUNK_SIZE);
 
-    for (const chunk of chunks) {
       await this.repository
         .createQueryBuilder()
         .insert()
@@ -51,10 +48,12 @@ export class FeedRepository {
 
   async getFollowerIds(authorId: string): Promise<string[]> {
     const rows: { followerId: string }[] = await this.dataSource.query(
-      `SELECT "followerId" FROM "follows"
+      `SELECT "followerId"
+       FROM "follows"
        WHERE "followingId" = $1 AND "status" = 'ACTIVE'`,
       [authorId],
     );
+
     return rows.map((r) => r.followerId);
   }
 
@@ -62,30 +61,62 @@ export class FeedRepository {
     authorId: string,
     limit: number,
   ): Promise<{ id: string; createdAt: Date }[]> {
-    return this.dataSource.query(
-      `SELECT id, "createdAt" FROM "posts"
+    const rows = await this.dataSource.query(
+      `SELECT id, "createdAt"
+       FROM "posts"
        WHERE "authorId" = $1 AND "deletedAt" IS NULL
        ORDER BY "createdAt" DESC
        LIMIT $2`,
       [authorId, limit],
     );
+
+    return rows.map((r: any) => ({
+      id: r.id,
+      createdAt: new Date(r.createdAt),
+    }));
   }
 
+  // -----------------------------------
+  // PERSONAL FEED JOIN (NO VIEW)
+  // -----------------------------------
   async findFeed(
     ownerId: string,
     limit: number,
     offset: number,
-  ): Promise<[FeedItem[], number]> {
-    return this.repository
+  ): Promise<[any[], number]> {
+    const qb = this.repository
       .createQueryBuilder('fi')
       .innerJoinAndSelect('fi.post', 'p', 'p.deletedAt IS NULL')
+
+      // base user
+      .innerJoin('base_users', 'bu', 'bu.id = p.authorId')
+
+      // user profile
+      .leftJoin('user_profiles', 'up', 'up.baseUserId = bu.id')
+
+      // brand profile
+      .leftJoin('brand_profiles', 'bp', 'bp.baseUserId = bu.id')
+
+      .addSelect([
+        'bu.id',
+        'up.firstName',
+        'up.lastName',
+        'up.profileImageUrl',
+        'bp.brandName',
+        'bp.profileImageUrl',
+      ])
+
       .where('fi.ownerId = :ownerId', { ownerId })
       .orderBy('fi.createdAt', 'DESC')
       .take(limit)
-      .skip(offset)
-      .getManyAndCount();
+      .skip(offset);
+
+    return qb.getManyAndCount();
   }
 
+  // -----------------------------------
+  // GLOBAL FEED JOIN (NO VIEW)
+  // -----------------------------------
   async findGlobalPosts(
     limit: number,
     offset: number,
@@ -93,6 +124,20 @@ export class FeedRepository {
     return this.dataSource
       .getRepository(Post)
       .createQueryBuilder('p')
+
+      .innerJoin('base_users', 'bu', 'bu.id = p.authorId')
+      .leftJoin('user_profiles', 'up', 'up.baseUserId = bu.id')
+      .leftJoin('brand_profiles', 'bp', 'bp.baseUserId = bu.id')
+
+      .addSelect([
+        'bu.id',
+        'up.firstName',
+        'up.lastName',
+        'up.profileImageUrl',
+        'bp.brandName',
+        'bp.profileImageUrl',
+      ])
+
       .where('p.visibility = :visibility', {
         visibility: PostVisibility.PUBLIC,
       })
@@ -121,6 +166,7 @@ export class FeedRepository {
       .from(FeedItem)
       .where('createdAt < :before', { before })
       .execute();
+
     return result.affected ?? 0;
   }
 }
