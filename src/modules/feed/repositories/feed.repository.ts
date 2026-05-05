@@ -82,21 +82,17 @@ export class FeedRepository {
   async findFeed(ownerId: string, limit: number, offset: number) {
     const qb = this.repository
       .createQueryBuilder('fi')
+      // 1. Join the post
       .innerJoinAndSelect('fi.post', 'p', 'p.deletedAt IS NULL')
-
-      // unified author join
-      .innerJoin('base_users', 'bu', 'bu.id = p.authorId')
-      .leftJoin('user_profiles', 'up', 'up.baseUserId = bu.id')
-      .leftJoin('brand_profiles', 'bp', 'bp.baseUserId = bu.id')
-
-      .addSelect([
-        'bu.id',
-        'up.firstName',
-        'up.lastName',
-        'up.profileImageUrl',
-        'bp.brandName',
-        'bp.profileImageUrl',
-      ])
+      
+      // 2. Join the author relation (defined in Post entity)
+      .leftJoinAndSelect('p.author', 'author')
+      
+      // 3. Join the profiles related to the author
+      // Note: These relation names (userProfile/brandProfile) must match 
+      // the property names inside your BaseUser entity.
+      .leftJoinAndSelect('author.userProfile', 'up')
+      .leftJoinAndSelect('author.brandProfile', 'bp')
 
       .where('fi.ownerId = :ownerId', { ownerId })
       .orderBy('fi.createdAt', 'DESC')
@@ -113,20 +109,9 @@ export class FeedRepository {
     const qb = this.dataSource
       .getRepository(Post)
       .createQueryBuilder('p')
-
-      .innerJoin('base_users', 'bu', 'bu.id = p.authorId')
-      .leftJoin('user_profiles', 'up', 'up.baseUserId = bu.id')
-      .leftJoin('brand_profiles', 'bp', 'bp.baseUserId = bu.id')
-
-      .addSelect([
-        'bu.id',
-        'up.firstName',
-        'up.lastName',
-        'up.profileImageUrl',
-        'bp.brandName',
-        'bp.profileImageUrl',
-      ])
-
+      .leftJoinAndSelect('p.author', 'author')
+      .leftJoinAndSelect('author.userProfile', 'up')
+      .leftJoinAndSelect('author.brandProfile', 'bp')
       .where('p.visibility = :visibility', {
         visibility: PostVisibility.PUBLIC,
       })

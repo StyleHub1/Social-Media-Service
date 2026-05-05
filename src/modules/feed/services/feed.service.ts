@@ -5,6 +5,7 @@ import { FeedItemResponseDto, FeedPostDto } from '../dto/feed-response.dto';
 import { FeedItemType } from '../enums/feed-item-type.enum';
 import { PaginationResponse } from '../../common/pagination/pagination.response';
 import { Post } from '../../posts/entities/post.entity';
+import { BaseUser } from '@/modules/auth/entities/base-user.entity';
 
 const BACKFILL_LIMIT = 20;
 
@@ -125,25 +126,33 @@ export class FeedService {
   // -----------------------
   // SAFE AUTHOR MAPPING
   // -----------------------
-  private mapPost(post: Post, author: any): FeedPostDto {
-    const isBrand = !!author?.brandName;
+  private mapPost(post: Post, author: BaseUser): FeedPostDto {
+  // Access the profiles nested inside the author object
+  const brand = author?.brandProfile;
+  const user = author?.userProfile;
 
-    const name = isBrand
-      ? author.brandName
-      : `${author?.firstName ?? ''} ${author?.lastName ?? ''}`.trim();
+  const isBrand = !!brand?.brandName;
 
-    return {
-      id: post.id,
-      content: post.content,
-      images: post.images,
-      videos: post.videos,
-      authorId: post.authorId,
-      authorName: name || 'Unknown',
-      authorImage: author?.profileImageUrl ?? null,
-      visibility: post.visibility,
-      reactionsCount: post.reactionsCount,
-      commentsCount: post.commentsCount,
-      createdAt: post.createdAt,
-    };
-  }
+  const name = isBrand
+    ? brand.brandName
+    : `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+
+  const image = isBrand 
+    ? brand?.profileImageUrl 
+    : user?.profileImageUrl;
+
+  return {
+    id: post.id,
+    content: post.content,
+    images: post.images,
+    videos: post.videos,
+    authorId: post.authorId,
+    authorName: name || 'Unknown',
+    authorImage: image || null,
+    visibility: post.visibility,
+    reactionsCount: post.reactionsCount,
+    commentsCount: post.commentsCount,
+    createdAt: post.createdAt,
+  };
+}
 }
