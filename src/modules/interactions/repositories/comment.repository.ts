@@ -40,12 +40,37 @@ export class CommentRepository {
     limit: number,
     offset: number,
   ): Promise<PaginationResponse<Comment>> {
-    const [items, total] = await this.repository.findAndCount({
-      where: { postId },
-      order: { createdAt: 'ASC' },
-      take: limit,
-      skip: offset,
-    });
+    const qb = this.repository
+      .createQueryBuilder('comment')
+      .leftJoin('comment.author', 'author')
+      .leftJoin('author.userProfile', 'userProfile')
+      .leftJoin('author.brandProfile', 'brandProfile')
+      .select([
+        'comment.id',
+        'comment.content',
+        'comment.postId',
+        'comment.authorId',
+        'comment.createdAt',
+        'comment.updatedAt',
+      ])
+      .addSelect('author.role')
+      .addSelect([
+        'userProfile.firstName',
+        'userProfile.lastName',
+        'userProfile.username',
+        'userProfile.profileImageUrl',
+      ])
+      .addSelect([
+        'brandProfile.brandName',
+        'brandProfile.username',
+        'brandProfile.profileImageUrl',
+      ])
+      .where('comment.postId = :postId', { postId })
+      .orderBy('comment.createdAt', 'ASC')
+      .take(limit)
+      .skip(offset);
+
+    const [items, total] = await qb.getManyAndCount();
     return { items, meta: { total, limit, offset } };
   }
 }

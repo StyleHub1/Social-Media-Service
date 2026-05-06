@@ -89,6 +89,18 @@ export class InteractionsService {
     );
   }
 
+  async checkReactionStatus(
+    userId: string,
+    postId: string,
+  ): Promise<{ reacted: boolean }> {
+    await this.postsService.getPostById(postId);
+    const existing = await this.likeRepository.findByUserAndPost(
+      userId,
+      postId,
+    );
+    return { reacted: !!existing };
+  }
+
   async getPostReactions(
     postId: string,
     query: GetInteractionsQueryDto,

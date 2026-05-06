@@ -263,6 +263,46 @@ describe('Posts (E2E)', () => {
       expect(res.body.items).toHaveLength(0);
       expect(res.body.meta.total).toBe(0);
     });
+
+    it('should include author profile info in each post', async () => {
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(userLoginDto)
+        .expect(200);
+      const token = loginRes.body.accessToken;
+
+      const user = await dataSource
+        .getRepository('base_users')
+        .findOne({ where: { email: testAccount.email } });
+
+      await dataSource.getRepository('user_profiles').save({
+        baseUserId: user!.id,
+        username: 'author_e2e',
+        firstName: 'Jane',
+        lastName: 'Doe',
+        gender: 'FEMALE',
+        profileImageUrl: 'https://example.com/photo.jpg',
+      });
+
+      await request(app.getHttpServer())
+        .post('/posts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ content: 'Post with author info' })
+        .expect(201);
+
+      const res = await request(app.getHttpServer()).get('/posts').expect(200);
+
+      const post = res.body.items[0];
+      expect(post.author).toBeDefined();
+      expect(post.author.role).toBe('USER');
+      expect(post.author.userProfile).toBeDefined();
+      expect(post.author.userProfile.firstName).toBe('Jane');
+      expect(post.author.userProfile.lastName).toBe('Doe');
+      expect(post.author.userProfile.username).toBe('author_e2e');
+      expect(post.author.userProfile.profileImageUrl).toBe(
+        'https://example.com/photo.jpg',
+      );
+    });
   });
 
   // ─────────────────────────────────────────────

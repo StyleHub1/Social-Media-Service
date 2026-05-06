@@ -39,6 +39,14 @@ export class InteractionsController {
     return this.interactionsService.unreact(user.sub, user.role, postId);
   }
 
+  @Get('reactions/:postId/status')
+  checkReactionStatus(
+    @CurrentUser() user: JwtPayload,
+    @Param('postId', ParseUUIDPipe) postId: string,
+  ) {
+    return this.interactionsService.checkReactionStatus(user.sub, postId);
+  }
+
   @Get('reactions/:postId')
   getPostReactions(
     @Param('postId', ParseUUIDPipe) postId: string,

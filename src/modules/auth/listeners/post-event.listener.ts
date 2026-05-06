@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { BaseUsersService } from '../services/base-user.service';
-import { PostCreatedEvent } from '@/modules/posts/events/post-created.event';
+import { PostCreatedEvent } from '../../../modules/posts/events/post-created.event';
 
 @Injectable()
 export class PostEventListener {

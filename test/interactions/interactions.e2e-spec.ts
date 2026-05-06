@@ -739,5 +739,124 @@ describe('Interactions (E2E)', () => {
 
       expect(res.body.meta.total).toBe(0);
     });
+
+    it('should include author profile info in each comment', async () => {
+      const token = await loginUser();
+
+      const user = await dataSource
+        .getRepository('base_users')
+        .findOne({ where: { email: testAccount.email } });
+
+      await dataSource.getRepository('user_profiles').save({
+        baseUserId: user!.id,
+        username: 'testuser_e2e',
+        firstName: 'Test',
+        lastName: 'User',
+        gender: 'MALE',
+        profileImageUrl: 'https://example.com/avatar.jpg',
+      });
+
+      await request(app.getHttpServer())
+        .post('/interactions/comments')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ postId: userPostId, content: 'Author info test' })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/interactions/comments/${userPostId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const comment = res.body.items[0];
+      expect(comment.author).toBeDefined();
+      expect(comment.author.role).toBe('USER');
+      expect(comment.author.userProfile).toBeDefined();
+      expect(comment.author.userProfile.firstName).toBe('Test');
+      expect(comment.author.userProfile.lastName).toBe('User');
+      expect(comment.author.userProfile.username).toBe('testuser_e2e');
+      expect(comment.author.userProfile.profileImageUrl).toBe(
+        'https://example.com/avatar.jpg',
+      );
+    });
+  });
+
+  // ─────────────────────────────────────────────
+  // GET /interactions/reactions/:postId/status
+  // ─────────────────────────────────────────────
+
+  describe('GET /interactions/reactions/:postId/status', () => {
+    it('should return 401 if no token provided', async () => {
+      await request(app.getHttpServer())
+        .get(`/interactions/reactions/${userPostId}/status`)
+        .expect(401);
+    });
+
+    it('should return 400 for invalid UUID param', async () => {
+      const token = await loginUser();
+
+      await request(app.getHttpServer())
+        .get('/interactions/reactions/not-a-uuid/status')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400);
+    });
+
+    it('should return 404 when post does not exist', async () => {
+      const token = await loginUser();
+
+      await request(app.getHttpServer())
+        .get(
+          '/interactions/reactions/00000000-0000-0000-0000-000000000000/status',
+        )
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('should return reacted: false when user has not reacted', async () => {
+      const token = await loginUser();
+
+      const res = await request(app.getHttpServer())
+        .get(`/interactions/reactions/${userPostId}/status`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toEqual({ reacted: false });
+    });
+
+    it('should return reacted: true after user reacts to a post', async () => {
+      const token = await loginUser();
+
+      await request(app.getHttpServer())
+        .post(`/interactions/reactions/${userPostId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/interactions/reactions/${userPostId}/status`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toEqual({ reacted: true });
+    });
+
+    it('should return reacted: false after user unreacts', async () => {
+      const token = await loginUser();
+
+      await request(app.getHttpServer())
+        .post(`/interactions/reactions/${userPostId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .delete(`/interactions/reactions/${userPostId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/interactions/reactions/${userPostId}/status`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toEqual({ reacted: false });
+    });
   });
 });

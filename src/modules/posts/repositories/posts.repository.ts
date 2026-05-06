@@ -20,19 +20,34 @@ export class PostsRepository {
     limit: number,
     offset: number,
   ): Promise<PaginationResponse<Post>> {
-    const qb = this.repository.createQueryBuilder('post');
-
-    qb.select([
-      'post.id',
-      'post.content',
-      'post.images',
-      'post.reactionsCount',
-      'post.commentsCount',
-      'post.videos',
-      'post.visibility',
-      'post.authorId',
-      'post.createdAt',
-    ])
+    const qb = this.repository
+      .createQueryBuilder('post')
+      .leftJoin('post.author', 'author')
+      .leftJoin('author.userProfile', 'userProfile')
+      .leftJoin('author.brandProfile', 'brandProfile')
+      .select([
+        'post.id',
+        'post.content',
+        'post.images',
+        'post.reactionsCount',
+        'post.commentsCount',
+        'post.videos',
+        'post.visibility',
+        'post.authorId',
+        'post.createdAt',
+      ])
+      .addSelect('author.role')
+      .addSelect([
+        'userProfile.firstName',
+        'userProfile.lastName',
+        'userProfile.username',
+        'userProfile.profileImageUrl',
+      ])
+      .addSelect([
+        'brandProfile.brandName',
+        'brandProfile.username',
+        'brandProfile.profileImageUrl',
+      ])
       .where('post.deletedAt IS NULL')
       .andWhere('post.visibility = :visibility', { visibility: 'PUBLIC' })
       .orderBy('post.createdAt', 'DESC')
@@ -45,11 +60,38 @@ export class PostsRepository {
   }
 
   async findById(id: string): Promise<Post | null> {
-    const qb = this.repository.createQueryBuilder('post');
-
-    qb.where('post.id = :id', { id }).andWhere('post.deletedAt IS NULL');
-
-    return await qb.getOne();
+    return this.repository
+      .createQueryBuilder('post')
+      .leftJoin('post.author', 'author')
+      .leftJoin('author.userProfile', 'userProfile')
+      .leftJoin('author.brandProfile', 'brandProfile')
+      .select([
+        'post.id',
+        'post.content',
+        'post.images',
+        'post.videos',
+        'post.visibility',
+        'post.authorId',
+        'post.reactionsCount',
+        'post.commentsCount',
+        'post.createdAt',
+        'post.updatedAt',
+      ])
+      .addSelect('author.role')
+      .addSelect([
+        'userProfile.firstName',
+        'userProfile.lastName',
+        'userProfile.username',
+        'userProfile.profileImageUrl',
+      ])
+      .addSelect([
+        'brandProfile.brandName',
+        'brandProfile.username',
+        'brandProfile.profileImageUrl',
+      ])
+      .where('post.id = :id', { id })
+      .andWhere('post.deletedAt IS NULL')
+      .getOne();
   }
 
   async findByUser(
@@ -57,19 +99,34 @@ export class PostsRepository {
     limit: number,
     offset: number,
   ): Promise<PaginationResponse<Post>> {
-    const qb = this.repository.createQueryBuilder('post');
-
-    qb.select([
-      'post.id',
-      'post.content',
-      'post.images',
-      'post.videos',
-      'post.visibility',
-      'post.authorId',
-      'post.createdAt',
-      'post.reactionsCount',
-      'post.commentsCount',
-    ])
+    const qb = this.repository
+      .createQueryBuilder('post')
+      .leftJoin('post.author', 'author')
+      .leftJoin('author.userProfile', 'userProfile')
+      .leftJoin('author.brandProfile', 'brandProfile')
+      .select([
+        'post.id',
+        'post.content',
+        'post.images',
+        'post.videos',
+        'post.visibility',
+        'post.authorId',
+        'post.createdAt',
+        'post.reactionsCount',
+        'post.commentsCount',
+      ])
+      .addSelect('author.role')
+      .addSelect([
+        'userProfile.firstName',
+        'userProfile.lastName',
+        'userProfile.username',
+        'userProfile.profileImageUrl',
+      ])
+      .addSelect([
+        'brandProfile.brandName',
+        'brandProfile.username',
+        'brandProfile.profileImageUrl',
+      ])
       .where('post.authorId = :authorId', { authorId })
       .andWhere('post.deletedAt IS NULL')
       .orderBy('post.createdAt', 'DESC')
