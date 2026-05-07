@@ -47,10 +47,16 @@ export class FollowRepository {
       .createQueryBuilder('follow')
       .innerJoin('follow.follower', 'follower')
       .leftJoin('follower.userProfile', 'userProfile')
+      .leftJoin('follower.brandProfile', 'brandProfile')
       .select([
         'follow.followerId AS id',
-        'userProfile.username AS username',
-        'userProfile.profileImageUrl AS "profileImageUrl"',
+        `CASE
+          WHEN "userProfile"."username" IS NOT NULL
+          THEN NULLIF(TRIM(CONCAT(COALESCE("userProfile"."firstName", ''), ' ', COALESCE("userProfile"."lastName", ''))), '')
+          ELSE "brandProfile"."brandName"
+        END AS name`,
+        'COALESCE("userProfile"."username", "brandProfile"."username") AS username',
+        'COALESCE("userProfile"."profileImageUrl", "brandProfile"."profileImageUrl") AS "profileImageUrl"',
       ])
       .where('follow.followingId = :userId', { userId })
       .orderBy('follow.createdAt', 'DESC')
@@ -61,6 +67,7 @@ export class FollowRepository {
 
     const items: FollowAccountDto[] = raw.map((r) => ({
       id: r.id,
+      name: r.name ?? null,
       username: r.username ?? null,
       profileImageUrl: r.profileImageUrl ?? null,
     }));
@@ -80,8 +87,13 @@ export class FollowRepository {
       .leftJoin('following.brandProfile', 'brandProfile')
       .select([
         'follow.followingId AS id',
-        'COALESCE(userProfile.username, brandProfile.username) AS username',
-        'COALESCE(userProfile.profileImageUrl, brandProfile.profileImageUrl) AS "profileImageUrl"',
+        `CASE
+          WHEN "userProfile"."username" IS NOT NULL
+          THEN NULLIF(TRIM(CONCAT(COALESCE("userProfile"."firstName", ''), ' ', COALESCE("userProfile"."lastName", ''))), '')
+          ELSE "brandProfile"."brandName"
+        END AS name`,
+        'COALESCE("userProfile"."username", "brandProfile"."username") AS username',
+        'COALESCE("userProfile"."profileImageUrl", "brandProfile"."profileImageUrl") AS "profileImageUrl"',
       ])
       .where('follow.followerId = :userId', { userId })
       .orderBy('follow.createdAt', 'DESC')
@@ -92,6 +104,7 @@ export class FollowRepository {
 
     const items: FollowAccountDto[] = raw.map((r) => ({
       id: r.id,
+      name: r.name ?? null,
       username: r.username ?? null,
       profileImageUrl: r.profileImageUrl ?? null,
     }));

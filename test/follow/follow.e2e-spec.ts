@@ -301,6 +301,42 @@ describe('Follow (E2E)', () => {
 
       expect(res.body.meta.total).toBe(1);
       expect(res.body.items[0]).toHaveProperty('id');
+      expect(res.body.items[0]).toHaveProperty('name');
+      expect(res.body.items[0]).toHaveProperty('username');
+      expect(res.body.items[0]).toHaveProperty('profileImageUrl');
+    });
+
+    it('should allow a BRAND to access their own followers', async () => {
+      const hashedPassword = await bcrypt.hash(testAccount.password, 10);
+      const brand = await dataSource.getRepository('base_users').save({
+        email: 'brand_followers@example.com',
+        password: hashedPassword,
+        isEmailVerified: true,
+        role: 'BRAND',
+      });
+
+      await dataSource.getRepository('follows').save({
+        followerId: secondUserId,
+        followingId: brand.id,
+      });
+
+      const brandLogin = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'brand_followers@example.com',
+          password: testAccount.password,
+          role: 'BRAND',
+        })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get('/follow/followers')
+        .set('Authorization', `Bearer ${brandLogin.body.accessToken}`)
+        .expect(200);
+
+      expect(res.body.meta.total).toBe(1);
+      expect(res.body.items[0]).toHaveProperty('id');
+      expect(res.body.items[0]).toHaveProperty('name');
     });
 
     it('should respect limit and offset query params', async () => {
@@ -368,6 +404,36 @@ describe('Follow (E2E)', () => {
 
       expect(res.body.meta.total).toBe(1);
       expect(res.body.items[0]).toHaveProperty('id');
+      expect(res.body.items[0]).toHaveProperty('name');
+      expect(res.body.items[0]).toHaveProperty('username');
+      expect(res.body.items[0]).toHaveProperty('profileImageUrl');
+    });
+
+    it('should allow a BRAND to access their own following list', async () => {
+      const hashedPassword = await bcrypt.hash(testAccount.password, 10);
+      await dataSource.getRepository('base_users').save({
+        email: 'brand_following@example.com',
+        password: hashedPassword,
+        isEmailVerified: true,
+        role: 'BRAND',
+      });
+
+      const brandLogin = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'brand_following@example.com',
+          password: testAccount.password,
+          role: 'BRAND',
+        })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get('/follow/following')
+        .set('Authorization', `Bearer ${brandLogin.body.accessToken}`)
+        .expect(200);
+
+      expect(res.body.items).toHaveLength(0);
+      expect(res.body.meta.total).toBe(0);
     });
   });
 

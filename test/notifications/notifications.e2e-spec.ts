@@ -760,6 +760,216 @@ describe('Notifications (E2E)', () => {
   });
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Actor enrichment (actorName + actorPhoto)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  describe('Actor enrichment (actorName + actorPhoto)', () => {
+    async function createUserWithProfile(
+      ds: DataSource,
+      email: string,
+      username: string,
+      profileImageUrl?: string,
+    ): Promise<Record<string, string>> {
+      const hashed = await bcrypt.hash('Password123!', 10);
+      const user = await ds.getRepository('base_users').save({
+        email,
+        password: hashed,
+        isEmailVerified: true,
+        role: 'USER',
+      });
+      await ds.getRepository('user_profiles').save({
+        username,
+        gender: 'MALE',
+        baseUserId: user.id,
+        ...(profileImageUrl ? { profileImageUrl } : {}),
+      });
+      return user;
+    }
+
+    it('GET /notifications returns actorName and actorPhoto when actor has a user profile', async () => {
+      const recipient = await dataSource
+        .getRepository('base_users')
+        .findOne({ where: { email: testAccount.email } });
+
+      const actor = await createUserWithProfile(
+        dataSource,
+        'actor-named@example.com',
+        'actor_username',
+        'https://cdn.example.com/avatar.jpg',
+      );
+
+      await dataSource.getRepository('notifications').save({
+        recipientId: recipient!.id,
+        actorId: actor.id,
+        type: 'NEW_FOLLOWER',
+        postId: null,
+        isRead: false,
+      });
+
+      const token = await loginUser(
+        app,
+        testAccount.email,
+        testAccount.password,
+      );
+
+      const res = await request(app.getHttpServer())
+        .get('/notifications')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const item = res.body.items[0];
+      expect(item.actorName).toBe('actor_username');
+      expect(item.actorPhoto).toBe('https://cdn.example.com/avatar.jpg');
+    });
+
+    it('GET /notifications returns actorPhoto as null when actor has no profile image', async () => {
+      const recipient = await dataSource
+        .getRepository('base_users')
+        .findOne({ where: { email: testAccount.email } });
+
+      const actor = await createUserWithProfile(
+        dataSource,
+        'actor-nophoto@example.com',
+        'actor_nophoto',
+      );
+
+      await dataSource.getRepository('notifications').save({
+        recipientId: recipient!.id,
+        actorId: actor.id,
+        type: 'NEW_FOLLOWER',
+        postId: null,
+        isRead: false,
+      });
+
+      const token = await loginUser(
+        app,
+        testAccount.email,
+        testAccount.password,
+      );
+
+      const res = await request(app.getHttpServer())
+        .get('/notifications')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const item = res.body.items[0];
+      expect(item.actorName).toBe('actor_nophoto');
+      expect(item.actorPhoto).toBeNull();
+    });
+
+    it('GET /notifications returns actorName and actorPhoto as null when actorId is null', async () => {
+      const recipient = await dataSource
+        .getRepository('base_users')
+        .findOne({ where: { email: testAccount.email } });
+
+      await dataSource.getRepository('notifications').save({
+        recipientId: recipient!.id,
+        actorId: null,
+        type: 'NEW_FOLLOWER',
+        postId: null,
+        isRead: false,
+      });
+
+      const token = await loginUser(
+        app,
+        testAccount.email,
+        testAccount.password,
+      );
+
+      const res = await request(app.getHttpServer())
+        .get('/notifications')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const item = res.body.items[0];
+      expect(item.actorId).toBeNull();
+      expect(item.actorName).toBeNull();
+      expect(item.actorPhoto).toBeNull();
+    });
+
+    it('PATCH /notifications/:id/read returns enriched actorName and actorPhoto', async () => {
+      const recipient = await dataSource
+        .getRepository('base_users')
+        .findOne({ where: { email: testAccount.email } });
+
+      const actor = await createUserWithProfile(
+        dataSource,
+        'actor-read@example.com',
+        'actor_read_user',
+        'https://cdn.example.com/read-avatar.jpg',
+      );
+
+      const notif = await dataSource.getRepository('notifications').save({
+        recipientId: recipient!.id,
+        actorId: actor.id,
+        type: 'POST_LIKED',
+        postId: null,
+        isRead: false,
+      });
+
+      const token = await loginUser(
+        app,
+        testAccount.email,
+        testAccount.password,
+      );
+
+      const res = await request(app.getHttpServer())
+        .patch(`/notifications/${notif.id}/read`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.isRead).toBe(true);
+      expect(res.body.actorName).toBe('actor_read_user');
+      expect(res.body.actorPhoto).toBe(
+        'https://cdn.example.com/read-avatar.jpg',
+      );
+    });
+
+    it('event-driven NEW_FOLLOWER notification from /follow includes actorName in GET response', async () => {
+      const recipient = await dataSource
+        .getRepository('base_users')
+        .findOne({ where: { email: testAccount.email } });
+
+      const actorUser = await createUserWithProfile(
+        dataSource,
+        'actor-event@example.com',
+        'actor_event_user',
+      );
+      const tokenActor = await loginUser(
+        app,
+        'actor-event@example.com',
+        'Password123!',
+      );
+
+      await request(app.getHttpServer())
+        .post('/follow')
+        .set('Authorization', `Bearer ${tokenActor}`)
+        .send({ followingId: recipient!.id })
+        .expect(201);
+
+      await wait(400);
+
+      const tokenRecipient = await loginUser(
+        app,
+        testAccount.email,
+        testAccount.password,
+      );
+
+      const res = await request(app.getHttpServer())
+        .get('/notifications')
+        .set('Authorization', `Bearer ${tokenRecipient}`)
+        .expect(200);
+
+      const notif = res.body.items.find(
+        (n: { type: string; actorId: string }) =>
+          n.type === 'NEW_FOLLOWER' && n.actorId === actorUser.id,
+      );
+      expect(notif).toBeDefined();
+      expect(notif.actorName).toBe('actor_event_user');
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Unused variable suppression — keep userLoginDto import used
   // ─────────────────────────────────────────────────────────────────────────
   void userLoginDto;

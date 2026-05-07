@@ -40,7 +40,7 @@ export class FollowController {
   }
 
   @Get('followers')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.BRAND)
   async getMyFollowers(
     @CurrentUser() user: JwtPayload,
     @Query() query: GetFollowsQueryDto,
@@ -53,7 +53,7 @@ export class FollowController {
   }
 
   @Get('following')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.BRAND)
   async getMyFollowing(
     @CurrentUser() user: JwtPayload,
     @Query() query: GetFollowsQueryDto,
@@ -66,7 +66,7 @@ export class FollowController {
   }
 
   @Get(':userId/followers')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.BRAND)
   async getUserFollowers(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() query: GetFollowsQueryDto,
@@ -79,7 +79,7 @@ export class FollowController {
   }
 
   @Get(':userId/following')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.BRAND)
   async getUserFollowing(
     @Param('userId', ParseUUIDPipe) userId: string,
     @Query() query: GetFollowsQueryDto,
@@ -92,7 +92,7 @@ export class FollowController {
   }
 
   @Get('status/:followingId')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.BRAND)
   async getFollowStatus(
     @CurrentUser() user: JwtPayload,
     @Param('followingId', ParseUUIDPipe) followingId: string,

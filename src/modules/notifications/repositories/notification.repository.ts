@@ -19,9 +19,17 @@ export class NotificationRepository {
     private readonly repo: Repository<Notification>,
   ) {}
 
-  create(data: CreateNotificationData): Promise<Notification> {
+  private readonly actorRelations = {
+    actor: { userProfile: true, brandProfile: true },
+  };
+
+  async create(data: CreateNotificationData): Promise<Notification> {
     const notification = this.repo.create(data);
-    return this.repo.save(notification);
+    const saved = await this.repo.save(notification);
+    return this.repo.findOne({
+      where: { id: saved.id },
+      relations: this.actorRelations,
+    }) as Promise<Notification>;
   }
 
   async findByRecipient(
@@ -31,6 +39,7 @@ export class NotificationRepository {
   ): Promise<PaginationResponse<Notification>> {
     const [items, total] = await this.repo.findAndCount({
       where: { recipientId },
+      relations: this.actorRelations,
       order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,
@@ -55,7 +64,10 @@ export class NotificationRepository {
       .execute();
 
     if (!result.affected || result.affected === 0) return null;
-    return this.repo.findOne({ where: { id } });
+    return this.repo.findOne({
+      where: { id },
+      relations: this.actorRelations,
+    });
   }
 
   async markAllAsRead(recipientId: string): Promise<void> {

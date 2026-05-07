@@ -9,7 +9,8 @@ export class FollowResponseDto {
 }
 
 export class FollowAccountDto {
-  id: string;
-  username: string | null;
-  profileImageUrl: string | null;
+  id!: string;
+  name!: string | null;
+  username!: string | null;
+  profileImageUrl!: string | null;
 }
