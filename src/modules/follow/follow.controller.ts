@@ -23,14 +23,14 @@ export class FollowController {
   constructor(private readonly followService: FollowService) {}
 
   @Post()
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.BRAND)
   @HttpCode(HttpStatus.CREATED)
   async follow(@CurrentUser() user: JwtPayload, @Body() body: CreateFollowDto) {
     return await this.followService.follow(user.sub, body.followingId);
   }
 
   @Delete(':followingId')
-  @Roles(Role.USER)
+  @Roles(Role.USER, Role.BRAND)
   @HttpCode(HttpStatus.NO_CONTENT)
   async unfollow(
     @CurrentUser() user: JwtPayload,

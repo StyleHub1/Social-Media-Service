@@ -194,7 +194,7 @@ describe('Follow (E2E)', () => {
         .expect(400);
     });
 
-    it('should return 403 when a BRAND tries to follow', async () => {
+    it('should allow a BRAND to follow a user', async () => {
       const hashedPassword = await bcrypt.hash(testAccount.password, 10);
       await dataSource.getRepository('base_users').save({
         email: 'brand@example.com',
@@ -216,7 +216,7 @@ describe('Follow (E2E)', () => {
         .post('/follow')
         .set('Authorization', `Bearer ${brandLogin.body.accessToken}`)
         .send({ followingId: secondUserId })
-        .expect(403);
+        .expect(201);
     });
   });
 

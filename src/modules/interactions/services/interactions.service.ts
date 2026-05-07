@@ -34,7 +34,6 @@ export class InteractionsService {
 
   async react(userId: string, userRole: Role, postId: string): Promise<Like> {
     const post = await this.postsService.getPostById(postId);
-    this.assertCanInteract(userId, userRole, post);
 
     const existing = await this.likeRepository.findByUserAndPost(
       userId,
@@ -68,7 +67,6 @@ export class InteractionsService {
 
   async unreact(userId: string, userRole: Role, postId: string): Promise<void> {
     const post = await this.postsService.getPostById(postId);
-    this.assertCanInteract(userId, userRole, post);
 
     const existing = await this.likeRepository.findByUserAndPost(
       userId,
@@ -115,7 +113,6 @@ export class InteractionsService {
     dto: CreateCommentDto,
   ): Promise<Comment> {
     const post = await this.postsService.getPostById(dto.postId);
-    this.assertCanInteract(authorId, userRole, post);
 
     let comment!: Comment;
     await this.dataSource.transaction(async (manager) => {
@@ -192,14 +189,6 @@ export class InteractionsService {
   ): Promise<PaginationResponse<Comment>> {
     await this.postsService.getPostById(postId);
     return this.commentRepository.findByPost(postId, query.limit, query.offset);
-  }
-
-  private assertCanInteract(userId: string, userRole: Role, post: Post): void {
-    if (userRole === Role.BRAND && post.authorId !== userId) {
-      throw new ForbiddenException(
-        'Brands can only interact with their own posts',
-      );
-    }
   }
 
   private async findCommentOrFail(commentId: string): Promise<Comment> {
