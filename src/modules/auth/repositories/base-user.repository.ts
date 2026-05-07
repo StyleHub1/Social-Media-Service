@@ -42,4 +42,11 @@ export class BaseUsersRepository {
   async delete(id: string): Promise<void> {
     await this.baseUserRepo.delete({ id });
   }
+  async decrementField(
+    id: string,
+    field: keyof BaseUser,
+    value: number,
+  ): Promise<void> {
+    await this.baseUserRepo.decrement({ id }, field as string, value);  
+  }
 }

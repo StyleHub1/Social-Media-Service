@@ -8,6 +8,7 @@ import { BaseUser } from '../entities/base-user.entity';
 
 @Injectable()
 export class BaseUsersService {
+
   constructor(private readonly baseUsersRepository: BaseUsersRepository) {}
 
   async findByEmail(email: string): Promise<BaseUser | null> {
@@ -80,5 +81,9 @@ export class BaseUsersService {
 
   async deleteBaseUser(id: string): Promise<void> {
     await this.baseUsersRepository.delete(id);
+  }
+
+  async decrementPosts(id: string, value = 1): Promise<void> {
+    await this.baseUsersRepository.decrementField(id, 'postsCount', value);
   }
 }

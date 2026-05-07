@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { BaseUsersService } from '../services/base-user.service';
 import { PostCreatedEvent } from '../../../modules/posts/events/post-created.event';
+import { PostDeletedEvent } from '@/modules/posts/events/post-deleted.event';
 
 @Injectable()
 export class PostEventListener {
@@ -20,6 +21,22 @@ export class PostEventListener {
     } catch (err) {
       this.logger.error(
         `Failed to increment post count for user ID: ${authorId}`,
+        err,
+      );
+    }
+
+  }
+  @OnEvent('post.deleted', { async: true })
+  async handlePostDeleted(event: PostDeletedEvent): Promise<void> {
+    this.logger.log(`Handling post.deleted event for post ID: ${event.postId}`);
+    const authorId = event.authorId;
+
+    try {
+      await this.baseUserService.decrementPosts(authorId);
+      this.logger.log(`Successfully decremented post count for user ID: ${authorId}`);
+    } catch (err) {
+      this.logger.error(
+        `Failed to decrement post count for user ID: ${authorId}`,
         err,
       );
     }
