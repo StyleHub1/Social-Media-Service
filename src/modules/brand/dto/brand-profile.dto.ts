@@ -21,6 +21,8 @@ export class BrandProfileDto {
   @IsNumber()
   numberOfFollowers?: number;
   @IsNumber()
+  numberOfFollowing?: number;
+  @IsNumber()
   numberOfPosts?: number;
   @IsNumber()
   score?: number; // Optional score field for search results

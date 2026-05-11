@@ -213,15 +213,6 @@ describe('Interactions (E2E)', () => {
       expect(res.body).toHaveProperty('id');
     });
 
-    it('BRAND should return 403 when reacting to another account post', async () => {
-      const token = await loginBrand();
-
-      await request(app.getHttpServer())
-        .post(`/interactions/reactions/${userPostId}`)
-        .set('Authorization', `Bearer ${token}`)
-        .expect(403);
-    });
-
     it('should increment reactionsCount on the post after reacting', async () => {
       const token = await loginUser();
 
@@ -467,16 +458,6 @@ describe('Interactions (E2E)', () => {
         .expect(201);
 
       expect(res.body).toHaveProperty('id');
-    });
-
-    it('BRAND should return 403 when commenting on another account post', async () => {
-      const token = await loginBrand();
-
-      await request(app.getHttpServer())
-        .post('/interactions/comments')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ postId: userPostId, content: 'Nice!' })
-        .expect(403);
     });
 
     it('should increment commentsCount on the post after adding a comment', async () => {

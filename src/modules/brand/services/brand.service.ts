@@ -93,6 +93,7 @@ export class BrandService {
       profileImageUrl: brand.profileImageUrl,
       websiteUrl: brand.websiteUrl,
       numberOfFollowers: baseUser.followersCount,
+      numberOfFollowing: baseUser.followingCount,
       numberOfPosts: baseUser.postsCount,
     };
     return profile;
