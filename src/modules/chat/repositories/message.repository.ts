@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { MessageStatus } from '../enums/message-status.enum';
@@ -103,16 +103,26 @@ export class MessageRepository {
     conversationId: string,
     recipientId: string,
   ): Promise<string[]> {
-    const rows = await this.dataSource.query<{ id: string }[]>(
-      `UPDATE "chat_messages"
-       SET "status" = 'SEEN', "seenAt" = now()
-       WHERE "conversationId" = $1
-         AND "senderId" != $2
-         AND "status" != 'SEEN'
-       RETURNING "id"`,
-      [conversationId, recipientId],
-    );
-    return rows.map((r) => r.id);
+    const messages = await this.repo.find({
+      where: {
+        conversationId,
+        senderId: Not(recipientId),
+      },
+      select: ['id', 'status'],
+    });
+
+    const toUpdate = messages.filter((m) => m.status !== MessageStatus.SEEN);
+    if (toUpdate.length === 0) return [];
+
+    const ids = toUpdate.map((m) => m.id);
+    await this.repo
+      .createQueryBuilder()
+      .update(ChatMessage)
+      .set({ status: MessageStatus.SEEN, seenAt: new Date() })
+      .whereInIds(ids)
+      .execute();
+
+    return ids;
   }
 
   countUnread(conversationId: string, recipientId: string): Promise<number> {
