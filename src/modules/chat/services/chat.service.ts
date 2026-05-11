@@ -92,6 +92,7 @@ export class ChatService {
 
     const dto = MessageResponseDto.fromEntity(msg);
     this.gateway.sendToUser(recipientId, 'chat:message', dto);
+    this.gateway.sendToUser(senderId, 'chat:message', dto);
 
     this.eventEmitter.emit('chat.message.sent', {
       messageId: msg.id,
