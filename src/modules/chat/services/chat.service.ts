@@ -158,8 +158,14 @@ export class ChatService {
     const senderId =
       conv.participantA === userId ? conv.participantB : conv.participantA;
 
+    this.logger.debug(
+      `markConversationAsSeen: affectedIds=${JSON.stringify(affectedIds)}`,
+    );
+
     const timestamp = new Date();
-    for (const messageId of affectedIds) {
+    for (const rawId of affectedIds) {
+      const messageId = String(rawId);
+      this.logger.debug(`emitting chat:status SEEN messageId=${messageId}`);
       const statusPush: MessageStatusPushDto = {
         messageId,
         status: MessageStatus.SEEN,
