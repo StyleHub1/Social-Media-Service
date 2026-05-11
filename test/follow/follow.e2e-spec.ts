@@ -208,7 +208,6 @@ describe('Follow (E2E)', () => {
         .send({
           email: 'brand@example.com',
           password: testAccount.password,
-          role: 'BRAND',
         })
         .expect(200);
 
@@ -325,7 +324,6 @@ describe('Follow (E2E)', () => {
         .send({
           email: 'brand_followers@example.com',
           password: testAccount.password,
-          role: 'BRAND',
         })
         .expect(200);
 
@@ -423,7 +421,6 @@ describe('Follow (E2E)', () => {
         .send({
           email: 'brand_following@example.com',
           password: testAccount.password,
-          role: 'BRAND',
         })
         .expect(200);
 

@@ -116,7 +116,6 @@ describe('Auth Login (E2E)', () => {
       .send({
         email: 'nonexistent@example.com',
         password: 'AnyPassword123!',
-        role: Role.USER,
       })
       .expect(401);
 
@@ -129,7 +128,6 @@ describe('Auth Login (E2E)', () => {
       .send({
         email: testAccount.email,
         password: 'WrongPassword123!',
-        role: Role.USER,
       })
       .expect(401);
 

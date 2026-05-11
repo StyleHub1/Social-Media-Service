@@ -140,7 +140,6 @@ describe('Search (E2E)', () => {
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        role: Role.USER,
         email: 'omar_user@test.com',
         password: 'password123!',
       })

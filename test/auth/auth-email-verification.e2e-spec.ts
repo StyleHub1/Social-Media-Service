@@ -197,7 +197,7 @@ describe('Auth Email Verification (E2E)', () => {
     // Login must fail before verification
     await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email, password, role: 'USER' })
+      .send({ email, password })
       .expect(401);
 
     // Verify email
@@ -209,7 +209,7 @@ describe('Auth Email Verification (E2E)', () => {
     // Login must succeed after verification
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email, password, role: 'USER' })
+      .send({ email, password })
       .expect(200);
 
     expect(loginRes.body).toHaveProperty('accessToken');

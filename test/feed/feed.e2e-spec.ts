@@ -299,7 +299,6 @@ describe('Feed (E2E)', () => {
         .send({
           email: 'newuser@example.com',
           password: 'Password123!',
-          role: 'USER',
         })
         .expect(200);
 
@@ -408,7 +407,5 @@ describe('Feed (E2E)', () => {
       expect(res.body.items[0].post).toHaveProperty('content');
       expect(res.body.items[0].post).toHaveProperty('authorId');
     });
-
-    
   });
 });

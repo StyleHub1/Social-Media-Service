@@ -31,7 +31,7 @@ async function loginUser(
 ): Promise<string> {
   const res = await request(app.getHttpServer())
     .post('/auth/login')
-    .send({ email, password, role: 'USER' })
+    .send({ email, password })
     .expect(200);
   return res.body.accessToken as string;
 }

@@ -33,13 +33,11 @@ export const testBrandProfile = {
 export const userLoginDto = {
   email: testAccount.email,
   password: testAccount.password,
-  role: Role.USER,
 };
 
 export const brandLoginDto = {
   email: testBrandAccount.email,
   password: testBrandAccount.password,
-  role: Role.BRAND,
 };
 
 export const testPost = {
