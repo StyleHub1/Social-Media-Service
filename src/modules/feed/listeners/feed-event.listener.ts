@@ -3,6 +3,8 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { FeedService } from '../services/feed.service';
 import { PostCreatedEvent } from '../../posts/events/post-created.event';
 import { PostDeletedEvent } from '../../posts/events/post-deleted.event';
+import { PostUpdatedEvent } from '../../posts/events/post-updated.event';
+import { PostVisibility } from '../../posts/entities/post.entity';
 import { UserFollowedEvent } from '../../follow/events/user-followed.event';
 import { UserUnfollowedEvent } from '../../follow/events/user-unfollowed.event';
 
@@ -23,6 +25,25 @@ export class FeedEventListener {
     } catch (err) {
       this.logger.error(
         `Feed fan-out failed for post ${event.post.id}`,
+        err instanceof Error ? err.stack : err,
+      );
+    }
+  }
+
+  @OnEvent('post.updated', { async: true })
+  async onPostUpdated(event: PostUpdatedEvent): Promise<void> {
+    const { visibility } = event.post;
+    const isRestricted =
+      visibility === PostVisibility.PRIVATE ||
+      visibility === PostVisibility.FOLLOWERS;
+
+    if (!isRestricted) return;
+
+    try {
+      await this.feedService.cleanupForDeletedPost(event.post.id);
+    } catch (err) {
+      this.logger.error(
+        `Feed cleanup failed for restricted post ${event.post.id} (visibility: ${visibility})`,
         err instanceof Error ? err.stack : err,
       );
     }
