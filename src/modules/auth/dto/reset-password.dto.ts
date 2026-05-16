@@ -1,10 +1,8 @@
-import { Role } from '../../..//modules/common/enums/role.enum';
 import {
   IsEmail,
   IsNotEmpty,
   IsString,
   MinLength,
-  IsEnum,
   Matches,
 } from 'class-validator';
 import { Match } from 'src/modules/common/decorators/match.decorator';
@@ -13,9 +11,6 @@ export class ResetPasswordDto {
   @IsEmail({}, { message: 'Email must be valid' })
   @IsNotEmpty()
   email: string;
-
-  @IsEnum(Role, { message: 'Type must be either USER or BRAND' })
-  role: Role;
 
   @IsString()
   @IsNotEmpty({ message: 'Verification token is required' })
