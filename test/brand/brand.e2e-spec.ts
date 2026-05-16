@@ -347,4 +347,84 @@ describe('Brand Profile (E2E)', () => {
         .expect(404);
     });
   });
+
+  // --- GET /brand (public list) ---
+
+  describe('GET /brand', () => {
+    it('should return 200 without auth token', async () => {
+      await request(app.getHttpServer()).get('/brand').expect(200);
+    });
+
+    it('should return empty items when no brands exist', async () => {
+      const res = await request(app.getHttpServer()).get('/brand').expect(200);
+
+      expect(res.body.items).toEqual([]);
+      expect(res.body.meta.total).toBe(0);
+    });
+
+    it('should return paginated brands with correct fields only', async () => {
+      const hashedPassword = await bcrypt.hash(testBrandAccount.password, 10);
+      const baseUser = await dataSource.getRepository('base_users').save({
+        ...testBrandAccount,
+        password: hashedPassword,
+        isEmailVerified: true,
+      });
+
+      await dataSource.getRepository('brand_profiles').save({
+        baseUserId: baseUser.id,
+        username: testBrandProfile.username,
+        brandName: testBrandProfile.brandName,
+        profileImageUrl: null,
+      });
+
+      const res = await request(app.getHttpServer()).get('/brand').expect(200);
+
+      expect(res.body.items).toHaveLength(1);
+      expect(res.body.meta.total).toBe(1);
+
+      const item = res.body.items[0];
+      expect(item).toHaveProperty('id');
+      expect(item).toHaveProperty('username', testBrandProfile.username);
+      expect(item).toHaveProperty('brandName', testBrandProfile.brandName);
+      expect(item).toHaveProperty('profileImageUrl');
+      expect(item).not.toHaveProperty('email');
+      expect(item).not.toHaveProperty('password');
+      expect(item).not.toHaveProperty('bio');
+      expect(item).not.toHaveProperty('websiteUrl');
+    });
+
+    it('should respect limit and offset pagination params', async () => {
+      const hashedPassword = await bcrypt.hash(testBrandAccount.password, 10);
+
+      for (let i = 0; i < 3; i++) {
+        const baseUser = await dataSource.getRepository('base_users').save({
+          email: `brand_list_${i}@example.com`,
+          password: hashedPassword,
+          isEmailVerified: true,
+          role: 'BRAND',
+        });
+        await dataSource.getRepository('brand_profiles').save({
+          baseUserId: baseUser.id,
+          username: `brand_list_user_${i}`,
+          brandName: `Brand List ${i}`,
+        });
+      }
+
+      const page1 = await request(app.getHttpServer())
+        .get('/brand?limit=2&offset=0')
+        .expect(200);
+
+      expect(page1.body.items).toHaveLength(2);
+      expect(page1.body.meta.total).toBe(3);
+      expect(page1.body.meta.limit).toBe(2);
+      expect(page1.body.meta.offset).toBe(0);
+
+      const page2 = await request(app.getHttpServer())
+        .get('/brand?limit=2&offset=2')
+        .expect(200);
+
+      expect(page2.body.items).toHaveLength(1);
+      expect(page2.body.meta.offset).toBe(2);
+    });
+  });
 });
