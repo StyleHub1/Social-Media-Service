@@ -10,6 +10,7 @@ import {
   ParseFilePipe,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -23,10 +24,19 @@ import { BrandCompleteProfileDto } from './dto/brand-complete-profile.dto';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { BrandProfileUpdateDto } from './dto/brand-profile-update.dto';
 import { Headers } from '@nestjs/common';
+import { Public } from '../common/decorators/public.decorator';
+import { PaginationParams } from '../common/pagination/pagination.params';
 
 @Controller('brand')
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
+
+  @Get()
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async getAllBrands(@Query() params: PaginationParams) {
+    return await this.brandService.getAllBrands(params);
+  }
 
   @Get('/profile')
   @Roles(Role.BRAND)

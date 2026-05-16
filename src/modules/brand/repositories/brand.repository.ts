@@ -73,4 +73,23 @@ export class BrandRepository {
   public async updateProfile(brand: BrandProfile): Promise<BrandProfile> {
     return await this.brandRepository.save(brand);
   }
+
+  async findAllPaginated(
+    limit: number,
+    offset: number,
+  ): Promise<[BrandProfile[], number]> {
+    return await this.brandRepository
+      .createQueryBuilder('brand')
+      .select([
+        'brand.baseUserId',
+        'brand.username',
+        'brand.brandName',
+        'brand.profileImageUrl',
+      ])
+      .where('brand.brandName IS NOT NULL')
+      .orderBy('brand.createdAt', 'DESC')
+      .skip(offset)
+      .take(limit)
+      .getManyAndCount();
+  }
 }

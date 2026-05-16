@@ -11,6 +11,9 @@ import { CloudinaryService } from '../../cloudinary/cloudinary.service';
 import { BaseUser, Role } from '../../auth/entities/base-user.entity';
 import { BrandSearchResponseDto } from '../dto/brand-search-response.dto';
 import { BrandProfileUpdateDto } from '../dto/brand-profile-update.dto';
+import { BrandListItemDto } from '../dto/brand-list-item.dto';
+import { PaginationParams } from '../../common/pagination/pagination.params';
+import { PaginationResponse } from '../../common/pagination/pagination.response';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BrandProfileCompletedEvent } from '../events/brand-profile-completed.event';
 import { BrandProfileUpdatedEvent } from '../events/brand-profile-updated.event';
@@ -171,6 +174,28 @@ export class BrandService {
       score: parseFloat((raw[index] as { score?: string })?.score ?? '0'),
     }));
   }
+  public async getAllBrands(
+    params: PaginationParams,
+  ): Promise<PaginationResponse<BrandListItemDto>> {
+    const [brands, total] = await this.brandRepository.findAllPaginated(
+      params.limit,
+      params.offset,
+    );
+    return {
+      items: brands.map((brand) => ({
+        id: brand.baseUserId,
+        username: brand.username,
+        brandName: brand.brandName,
+        profileImageUrl: brand.profileImageUrl ?? null,
+      })),
+      meta: {
+        total,
+        limit: params.limit,
+        offset: params.offset,
+      },
+    };
+  }
+
   public async updateProfile(
     brandId: string,
     updates: Partial<BrandProfileUpdateDto>,
