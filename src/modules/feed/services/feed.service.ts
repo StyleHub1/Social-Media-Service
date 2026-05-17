@@ -6,6 +6,7 @@ import { FeedItemType } from '../enums/feed-item-type.enum';
 import { PaginationResponse } from '../../common/pagination/pagination.response';
 import { Post } from '../../posts/entities/post.entity';
 import { BaseUser } from '@/modules/auth/entities/base-user.entity';
+import { Role } from '../../common/enums/role.enum';
 
 const BACKFILL_LIMIT = 20;
 
@@ -147,6 +148,7 @@ export class FeedService {
     images: post.images,
     videos: post.videos,
     authorId: post.authorId,
+    authorType: isBrand ? Role.BRAND : Role.USER,
     authorName: name || 'Unknown',
     authorImage: image || null,
     visibility: post.visibility,
