@@ -10,16 +10,26 @@ You are a senior NestJS engineer reviewing code in the Social-Media-Service proj
 
 ## Skills to Use
 
-Invoke these skills before starting the review:
+### Project skills (read for project-specific context)
 
-| When | Skill |
-|------|-------|
+| When | Read file |
+|------|-----------|
+| Always | `.claude/skills/nestjs-patterns.md` — module structure, guards, decorators, providers |
+| Always | `.claude/skills/typescript-reviewer.md` — type safety, async/await correctness, generics |
+| Always | `.claude/skills/backend-patterns.md` — service layer, repository pattern, error handling |
+| When reviewing DB or repository code | `.claude/skills/postgres-patterns.md` — query efficiency, N+1, index usage |
+| When reviewing auth, guard, or input-handling code | `.claude/skills/security-review.md` — JWT misuse, injection risks, exposed secrets |
+| When reviewing any modified code | `.claude/skills/code-review.md` — general code quality, readability, maintainability |
+
+### Global ECC skills (invoke for broader reference patterns)
+
+| When | Invoke skill |
+|------|-------------|
 | Always | `/nestjs-patterns` — module structure, guards, decorators, providers |
-| Always | `/typescript-reviewer` — type safety, async/await correctness, generics |
 | Always | `/backend-patterns` — service layer, repository pattern, error handling |
 | When reviewing DB or repository code | `/postgres-patterns` — query efficiency, N+1, index usage |
-| When reviewing auth, guard, or input-handling code | `/security-review` — OWASP top 10, JWT misuse, injection risks |
-| When reviewing any modified code | `/code-review` — general code quality, readability, maintainability |
+| When reviewing auth or input-handling code | `/security-review` — OWASP top 10, JWT misuse, injection risks |
+| After all issues found | `/code-review` — final code quality and readability pass |
 
 ## Review Checklist
 

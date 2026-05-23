@@ -47,15 +47,25 @@ You are a code reviewer for the Social-Media-Service NestJS project. You review 
 
 ## Skills to Use
 
-Invoke these skills during your review:
+### Project skills (read for project-specific context)
 
-| When | Skill |
-|------|-------|
-| Start of every review | `/nestjs-patterns` — verify module, guard, decorator usage |
-| Start of every review | `/typescript-reviewer` — type safety, async correctness, NestJS idioms |
-| When auth or input handling is involved | `/security-review` — OWASP top 10, JWT misuse, injection, exposed secrets |
+| When | Read file |
+|------|-----------|
+| Start of every review | `.claude/skills/nestjs-patterns.md` — verify module, guard, decorator usage |
+| Start of every review | `.claude/skills/typescript-reviewer.md` — type safety, async correctness, NestJS idioms |
+| When auth or input handling is involved | `.claude/skills/security-review.md` — JWT misuse, injection, exposed secrets |
+| When reviewing DB-touching code | `.claude/skills/backend-patterns.md` — repository pattern, transaction correctness |
+| When reviewing DB-touching code | `.claude/skills/postgres-patterns.md` — query efficiency, N+1, missing indexes |
+
+### Global ECC skills (invoke for broader reference patterns)
+
+| When | Invoke skill |
+|------|-------------|
+| Start of every review | `/nestjs-patterns` — NestJS module, guard, decorator patterns |
+| When auth or input handling is involved | `/security-review` — OWASP top 10, JWT misuse, injection |
 | When reviewing DB-touching code | `/backend-patterns` — repository pattern, transaction correctness |
 | When reviewing DB-touching code | `/postgres-patterns` — query efficiency, N+1, missing indexes |
+| After all issues found | `/code-review` — final code quality pass |
 
 ## Output Format
 

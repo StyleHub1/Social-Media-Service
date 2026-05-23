@@ -50,12 +50,7 @@ export class AuthController {
   async forgotPassword(@Body() input: ForgotPasswordDto) {
     return await this.authService.forgotPassword(input);
   }
-  // @Post('verify-reset-code')
-  // @Public()
-  // @HttpCode(HttpStatus.OK)
-  // async verifyResetCode(@Body() input: VerifyResetCodeDto) {
-  //     return await this.authService.verifyResetCode(input);
-  // }
+  
   @Post('reset-password')
   @Public()
   @HttpCode(HttpStatus.OK)

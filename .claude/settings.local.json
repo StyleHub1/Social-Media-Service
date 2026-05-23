@@ -11,7 +11,14 @@
       "Bash(npm create:*)",
       "Bash(npx tailwindcss:*)",
       "Bash(./node_modules/.bin/tailwindcss init:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(sed -n '490,510p' /Users/compumagic/Downloads/stylehub/Social-Media-Service/test/posts/posts.e2e-spec.ts)",
+      "Bash(sed -n '570,585p' /Users/compumagic/Downloads/stylehub/Social-Media-Service/test/posts/posts.e2e-spec.ts)",
+      "Bash(sed -n '355,370p' /Users/compumagic/Downloads/stylehub/Social-Media-Service/test/interactions/interactions.e2e-spec.ts)",
+      "Bash(sed -n '260,270p' /Users/compumagic/Downloads/stylehub/Social-Media-Service/test/user/user.e2e-spec.ts)",
+      "Bash(sed -n '100,150p' /Users/compumagic/Downloads/stylehub/Social-Media-Service/test/search/search.e2e-spec.ts)",
+      "Bash(git add:*)"
     ]
   }
 }

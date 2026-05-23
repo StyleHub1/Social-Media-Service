@@ -41,17 +41,24 @@ Every `up()` must have a corresponding `down()` that fully reverses the change.
 
 ## Skills to Use
 
-Invoke these skills during your work:
+### Project skills (read for project-specific context)
 
-| When | Skill |
-|------|-------|
-| Before writing any migration | `/database-migrations` — migration structure, `up()`/`down()` patterns, naming conventions |
-| Before writing any migration | `/postgres-patterns` — PostgreSQL index types, constraint syntax, partial indexes |
+| When | Read file |
+|------|-----------|
+| Before writing any migration | `.claude/skills/database-migrations.md` — migration structure, `up()`/`down()` patterns, naming conventions |
+| Before writing any migration | `.claude/skills/postgres-patterns.md` — PostgreSQL index types, constraint syntax, partial indexes |
+
+### Global ECC skills (invoke for broader reference patterns)
+
+| When | Invoke skill |
+|------|-------------|
+| Before writing any migration | `/database-migrations` — migration structure, up/down patterns |
+| Before writing any migration | `/postgres-patterns` — PostgreSQL index types, constraint syntax |
 
 ## Your Task
 
 When asked to create a migration:
-1. Invoke `/database-migrations` to align on structure before writing
+1. Read `.claude/skills/database-migrations.md` and invoke `/database-migrations` to align on structure
 2. Read `src/database/migrations/` to confirm the next number
 3. Read the relevant entity file to understand the schema
 4. Generate the complete migration file with both `up()` and `down()`

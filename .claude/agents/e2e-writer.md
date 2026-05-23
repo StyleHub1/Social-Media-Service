@@ -56,20 +56,28 @@ Always assert on:
 
 ## Skills to Use
 
-Invoke these skills during your work:
+### Project skills (read for project-specific context)
 
-| When | Skill |
-|------|-------|
-| Before writing any tests | `/e2e-testing` — e2e test structure, setup/teardown, assertion patterns |
-| Before writing any tests | `/tdd-workflow` — ensure coverage of all branches and edge cases |
-| When checking test quality after writing | `/nestjs-patterns` — verify the app bootstrap and module setup is correct |
+| When | Read file |
+|------|-----------|
+| Before writing any tests | `.claude/skills/e2e-testing.md` — e2e test structure, setup/teardown, assertion patterns |
+| Before writing any tests | `.claude/skills/tdd-workflow.md` — coverage of all branches and edge cases |
+| When checking test quality after writing | `.claude/skills/nestjs-patterns.md` — verify app bootstrap and module setup |
+
+### Global ECC skills (invoke for broader reference patterns)
+
+| When | Invoke skill |
+|------|-------------|
+| Before writing any tests | `/e2e-testing` — e2e test structure, setup/teardown patterns |
+| Before writing any tests | `/tdd-workflow` — red-green-refactor, branch and edge case coverage |
+| When checking test quality | `/nestjs-patterns` — verify app bootstrap and module wiring |
 
 ## Your Task
 
 When asked to write e2e tests:
-1. Invoke `/e2e-testing` first to align on test structure and patterns
+1. Read `.claude/skills/e2e-testing.md` and invoke `/e2e-testing` to align on test structure
 2. Read the controller file to understand all endpoints and their auth requirements
 3. Read an existing e2e spec (e.g. `test/brand/brand.e2e-spec.ts`) to match the setup style
 4. Generate the complete spec file covering all scenarios listed above
 5. Include setup (app init, user creation) and teardown (close app)
-6. Verify coverage against the checklist with `/tdd-workflow` before finishing
+6. Read `.claude/skills/tdd-workflow.md` and verify coverage against it before finishing

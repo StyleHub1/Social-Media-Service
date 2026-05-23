@@ -26,10 +26,8 @@ export class FeedService {
       offset,
     );
 
-    const [globalPosts, globalTotal] = await this.feedRepository.findGlobalPosts(
-      limit,
-      offset,
-    );
+    const [globalPosts, globalTotal] =
+      await this.feedRepository.findGlobalPosts(limit, offset);
 
     const items: FeedItemResponseDto[] = [];
 
@@ -68,9 +66,7 @@ export class FeedService {
     // -----------------------
     const hasPersonal = feedTotal > 0;
 
-    const total = hasPersonal
-      ? feedTotal
-      : globalTotal;
+    const total = hasPersonal ? feedTotal : globalTotal;
 
     return {
       items,
@@ -114,10 +110,7 @@ export class FeedService {
   }
 
   async cleanupForUnfollow(followerId: string, followingId: string) {
-    await this.feedRepository.deleteByOwnerAndAuthor(
-      followerId,
-      followingId,
-    );
+    await this.feedRepository.deleteByOwnerAndAuthor(followerId, followingId);
   }
 
   async cleanupForDeletedPost(postId: string) {
@@ -128,33 +121,31 @@ export class FeedService {
   // SAFE AUTHOR MAPPING
   // -----------------------
   private mapPost(post: Post, author: BaseUser): FeedPostDto {
-  // Access the profiles nested inside the author object
-  const brand = author?.brandProfile;
-  const user = author?.userProfile;
+    // Access the profiles nested inside the author object
+    const brand = author?.brandProfile;
+    const user = author?.userProfile;
 
-  const isBrand = !!brand?.brandName;
+    const isBrand = !!brand?.brandName;
 
-  const name = isBrand
-    ? brand.brandName
-    : `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+    const name = isBrand
+      ? brand.brandName
+      : `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
 
-  const image = isBrand 
-    ? brand?.profileImageUrl 
-    : user?.profileImageUrl;
+    const image = isBrand ? brand?.profileImageUrl : user?.profileImageUrl;
 
-  return {
-    id: post.id,
-    content: post.content,
-    images: post.images,
-    videos: post.videos,
-    authorId: post.authorId,
-    authorType: isBrand ? Role.BRAND : Role.USER,
-    authorName: name || 'Unknown',
-    authorImage: image || null,
-    visibility: post.visibility,
-    reactionsCount: post.reactionsCount,
-    commentsCount: post.commentsCount,
-    createdAt: post.createdAt,
-  };
-}
+    return {
+      id: post.id,
+      content: post.content,
+      images: post.images,
+      videos: post.videos,
+      authorId: post.authorId,
+      authorType: isBrand ? Role.BRAND : Role.USER,
+      authorName: name || 'Unknown',
+      authorImage: image || null,
+      visibility: post.visibility,
+      reactionsCount: post.reactionsCount,
+      commentsCount: post.commentsCount,
+      createdAt: post.createdAt,
+    };
+  }
 }

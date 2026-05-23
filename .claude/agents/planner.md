@@ -10,10 +10,21 @@ You are a senior backend architect for the Social-Media-Service project (NestJS 
 
 ## Skills to Use
 
-Invoke these skills to inform the plan:
+### Project skills (read for project-specific context)
 
-| When | Skill |
-|------|-------|
+| When | Read file |
+|------|-----------|
+| Designing the API surface | `.claude/skills/api-design.md` — REST conventions, response shapes, pagination |
+| Designing the module structure | `.claude/skills/nestjs-patterns.md` — module, provider, guard, decorator patterns |
+| Designing the service and data layer | `.claude/skills/backend-patterns.md` — service layer, repository pattern, transactions |
+| Designing any DB schema change | `.claude/skills/database-migrations.md` — migration structure, indexes, constraints |
+| Designing any DB schema change | `.claude/skills/postgres-patterns.md` — query efficiency, index types, unique constraints |
+| Assessing auth and input handling | `.claude/skills/security-review.md` — auth enforcement, rate limits, input validation |
+
+### Global ECC skills (invoke for broader reference patterns)
+
+| When | Invoke skill |
+|------|-------------|
 | Designing the API surface | `/api-design` — REST conventions, response shapes, pagination |
 | Designing the module structure | `/nestjs-patterns` — module, provider, guard, decorator patterns |
 | Designing the service and data layer | `/backend-patterns` — service layer, repository pattern, transactions |
