@@ -1,98 +1,166 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+# StyleHub — Social Media Service
+
+A production-grade **social media microservice** built with **NestJS**, powering feeds, real-time chat, notifications, and a full social graph for the StyleHub platform. Event-driven, containerized, and CI/CD-deployed.
+
+<p align="left">
+  <img src="https://img.shields.io/badge/NestJS-E0234E?style=flat-square&logo=nestjs&logoColor=white" alt="NestJS" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/TypeORM-FE0902?style=flat-square&logo=typeorm&logoColor=white" alt="TypeORM" />
+  <img src="https://img.shields.io/badge/RabbitMQ-FF6600?style=flat-square&logo=rabbitmq&logoColor=white" alt="RabbitMQ" />
+  <img src="https://img.shields.io/badge/Socket.IO-010101?style=flat-square&logo=socketdotio&logoColor=white" alt="Socket.IO" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Swagger-85EA2D?style=flat-square&logo=swagger&logoColor=black" alt="Swagger" />
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> Part of **StyleHub**, a microservices platform combining e-commerce, social media, and AI-driven recommendations. This repository is the social media service — owned and built end-to-end.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Highlights
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **59 REST endpoints** across **14 feature modules** — feeds, posts, interactions, follow graph, chat/DMs, notifications, search, and more.
+- **Real-time** messaging and notifications over **Socket.IO** WebSockets with authenticated gateways.
+- **Event-driven** architecture using **RabbitMQ** (topic exchange) for cross-service communication and decoupled side effects.
+- **Secure auth**: JWT access + refresh tokens, email verification, password reset, bcrypt hashing, Passport strategies, and route-level rate limiting.
+- **Media pipeline**: image/video uploads streamed to **Cloudinary**.
+- **Transactional email** via Brevo/Sendinblue for verification and notifications.
+- **Fully containerized** (Docker + Docker Compose) with **CI/CD** to Heroku via GitHub Actions.
+- **Tested**: unit tests plus end-to-end tests against real PostgreSQL using **Testcontainers**.
+- **Documented**: auto-generated **Swagger/OpenAPI** spec with a one-command Postman sync.
 
-## Project setup
+---
 
-```bash
-$ npm install
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Social Media Service (NestJS)              │
+│                                                              │
+│  Auth ─ User ─ Posts ─ Feed ─ Follow ─ Interactions          │
+│  Chat ─ Messaging ─ Notifications ─ Search ─ Brand           │
+│  Realtime (Socket.IO) ─ Cloudinary ─ Common                  │
+└───────┬───────────────────────┬──────────────────┬──────────┘
+        │                       │                  │
+   PostgreSQL              RabbitMQ            Cloudinary
+   (TypeORM +            (topic exchange,     (media storage)
+    migrations)          cross-service events)
 ```
 
-## Compile and run the project
+Each module is self-contained (controller → service → repository) with DTO validation via `class-validator` and configuration validated at boot with **Joi**.
 
+### Feature modules
+
+| Module | Responsibility |
+|---|---|
+| `auth` | Registration, login, JWT access/refresh, email verification, password reset |
+| `user` | Profiles, account management |
+| `posts` | Post creation, media, lifecycle |
+| `feed` | Personalized and chronological feeds |
+| `follow` | Follow/unfollow, followers/following graph |
+| `interactions` | Likes, comments, and engagement |
+| `chat` / `messaging` | Direct messages and conversations |
+| `notifications` | In-app and pushed notifications |
+| `realtime` | Authenticated Socket.IO gateways |
+| `search` | User and content search |
+| `brand` | Brand accounts |
+| `cloudinary` | Media upload/streaming |
+| `common` | Shared guards, pipes, filters, utilities |
+
+---
+
+## Tech stack
+
+**Framework** NestJS · TypeScript
+**Data** PostgreSQL · TypeORM (migrations, entities)
+**Messaging** RabbitMQ (`amqplib`, `@nestjs/microservices`) · Socket.IO
+**Auth** JWT (`@nestjs/jwt`) · Passport · bcrypt · `@nestjs/throttler`
+**Media & email** Cloudinary · Brevo/Sendinblue
+**Validation** `class-validator` · `class-transformer` · Joi
+**Docs** Swagger / OpenAPI · Postman sync
+**Testing** Jest · Supertest · Testcontainers (PostgreSQL)
+**DevOps** Docker · Docker Compose · GitHub Actions · Heroku
+
+---
+
+## Getting started
+
+### Prerequisites
+- Node.js 18+
+- Docker & Docker Compose
+
+### 1. Clone and install
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone https://github.com/StyleHub1/Social-Media-Service.git
+cd Social-Media-Service
+npm install
 ```
 
-## Run tests
+### 2. Configure environment
+Create a `.env` file (see the variables validated in `src/config/config.types.ts`):
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=social_media_DB
+
+JWT_TOKEN=your_access_secret
+JWT_REFRESH_TOKEN=your_refresh_secret
+JWT_EMAIL_VERIFICATION_SECRET=your_email_secret
+
+RABBITMQ_URL=amqp://localhost:5672
+CLOUDINARY_URL=cloudinary://...
+BREVO_API_KEY=...
+```
+
+### 3. Start infrastructure (PostgreSQL + RabbitMQ)
+```bash
+docker compose up -d
+```
+
+### 4. Run migrations and start
+```bash
+npm run migration:run
+npm run start:dev
+```
+
+The API runs on `http://localhost:3000`. Interactive docs are available at `/api` (Swagger).
+
+---
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run start:dev` | Start in watch mode |
+| `npm run build` | Production build |
+| `npm run test` | Unit tests |
+| `npm run test:e2e` | End-to-end tests (Testcontainers) |
+| `npm run test:cov` | Coverage report |
+| `npm run migration:generate` | Generate a TypeORM migration |
+| `npm run migration:run` | Apply migrations |
+| `npm run sync-postman` | Push the OpenAPI spec to Postman |
+
+---
+
+## Testing
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run test        # unit
+npm run test:e2e    # spins up a real PostgreSQL container via Testcontainers
+npm run test:cov    # coverage
 ```
+
+---
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Containerized with a multi-stage `Dockerfile`. On push to `main`, GitHub Actions builds, tests, and deploys to Heroku, injecting secrets from the CI environment (no credentials are committed to the repo).
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+---
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+## Author
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+**Omar Sherif Elghamry** — Backend & AI Engineer
+[LinkedIn](https://www.linkedin.com/in/omar-elghamry-3a7256248/) · [GitHub](https://github.com/omaaarsh)
